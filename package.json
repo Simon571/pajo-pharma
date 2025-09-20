@@ -22,7 +22,7 @@
     "test:build": "npm run type-check && npm run lint && npm run build",
     "backup": "mkdir -p backups && cp prisma/dev.db backups/backup-$(date +%Y%m%d-%H%M%S).db",
     "clean": "rm -rf .next && rm -rf node_modules/.cache",
-  "build:mobile": "set MOBILE_BUILD=true && next build --no-lint && npx cap sync",
+    "build:mobile": "set MOBILE_BUILD=true && next build --no-lint && npx cap sync",
     "android:dev": "npm run build:mobile && npx cap run android",
     "android:build": "npm run build:mobile && npx cap build android",
     "android:open": "npx cap open android"
@@ -45,6 +45,7 @@
     "@types/nprogress": "^0.2.3",
     "bcrypt": "^6.0.0",
     "bcryptjs": "^3.0.2",
+    "better-sqlite3": "^12.2.0",
     "class-variance-authority": "^0.7.1",
     "clsx": "^2.1.1",
     "csv-parse": "^6.0.0",
