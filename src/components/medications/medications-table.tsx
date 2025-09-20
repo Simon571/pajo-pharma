@@ -23,11 +23,27 @@ export function MedicationsTable() {
     fetchMedications();
   }, []);
 
-  const handleFormSubmit = async (data: Omit<Medication, 'id' | 'createdAt' | 'updatedAt'>) => {
+  const handleFormSubmit = async (data: {
+    name: string;
+    pharmaceuticalForm: string;
+    purchasePrice: number;
+    price: number;
+    quantity: number;
+    expirationDate: string;
+    barcode: string;
+    isAvailableForSale?: boolean;
+  }) => {
+    // Transform the form data to match the API expectations
+    const medicationData = {
+      ...data,
+      expirationDate: new Date(data.expirationDate),
+      isAvailableForSale: data.isAvailableForSale ?? true,
+    };
+
     if (selectedMedication) {
-      await updateMedication(selectedMedication.id, data);
+      await updateMedication(selectedMedication.id, medicationData);
     } else {
-      await createMedication(data);
+      await createMedication(medicationData);
     }
     fetchMedications();
     setIsDialogOpen(false);

@@ -3,11 +3,12 @@
 import { useState } from 'react';
 import { useRouter } from 'next/navigation';
 import { toast } from 'sonner';
-import { Card, CardHeader, CardTitle, CardDescription, CardContent, CardFooter } from '@/components/ui/card';
 import { Label } from '@/components/ui/label';
 import { Input } from '@/components/ui/input';
 import { Button } from '@/components/ui/button';
 import { signIn } from 'next-auth/react';
+import { Package, ArrowLeft } from 'lucide-react';
+import { LoginParticles } from '@/components/ui/login-particles';
 
 interface LoginFormProps {
   role: 'admin' | 'seller';
@@ -16,10 +17,12 @@ interface LoginFormProps {
 export function LoginForm({ role }: LoginFormProps) {
   const [username, setUsername] = useState('');
   const [password, setPassword] = useState('');
+  const [isLoading, setIsLoading] = useState(false);
   const router = useRouter();
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
+    setIsLoading(true);
 
     const result = await signIn('credentials', {
       redirect: false,
@@ -35,49 +38,83 @@ export function LoginForm({ role }: LoginFormProps) {
         router.push('/seller-dashboard');
       }
     } else {
-      toast.error(result?.error || `Nom d'utilisateur ou mot de passe incorrect.`);
+      toast.error(`Nom d'utilisateur ou mot de passe incorrect.`);
     }
+    
+    setIsLoading(false);
   };
 
   return (
-    <div className="flex min-h-screen items-center justify-center bg-gray-100">
-      <Card className="w-[350px]">
-        <CardHeader>
-          <CardTitle>Connexion {role === 'admin' ? 'Admin' : 'Vendeur'}</CardTitle>
-          <CardDescription>Connectez-vous à votre compte PAJO PHARMA.</CardDescription>
-        </CardHeader>
-        <CardContent>
-          <form onSubmit={handleSubmit}>
-            <div className="grid w-full items-center gap-4">
-              <div className="flex flex-col space-y-1.5">
-                <Label htmlFor="username">Nom d&#39;utilisateur</Label>
-                <Input
-                  id="username"
-                  placeholder="Votre nom d&#39;utilisateur"
-                  value={username}
-                  onChange={(e) => setUsername(e.target.value)}
-                  required
-                />
+    <div className="min-h-screen bg-gradient-to-br from-blue-500 via-blue-600 to-blue-700 flex items-center justify-center p-6 relative overflow-hidden">
+      <LoginParticles />
+      <div className="w-full max-w-md relative z-10">
+        <div className="bg-white rounded-2xl shadow-2xl p-8 transform transition-all duration-500 hover:shadow-3xl animate-in fade-in slide-in-from-bottom-4">
+          {/* Logo et titre */}
+          <div className="text-center mb-8">
+            <div className="flex items-center justify-center mb-4">
+              <div className="w-10 h-10 bg-blue-600 rounded-xl flex items-center justify-center mr-3">
+                <Package className="h-6 w-6 text-white" />
               </div>
-              <div className="flex flex-col space-y-1.5">
-                <Label htmlFor="password">Mot de passe</Label>
-                <Input
-                  id="password"
-                  type="password"
-                  placeholder="Votre mot de passe"
-                  value={password}
-                  onChange={(e) => setPassword(e.target.value)}
-                  required
-                />
-              </div>
+              <h1 className="text-2xl font-bold text-blue-600">PajoPharma</h1>
             </div>
-            <Button type="submit" className="w-full mt-6">Se connecter</Button>
+            <h2 className="text-2xl font-bold text-gray-800 mb-2">Connexion</h2>
+            <p className="text-gray-600">Entrez vos identifiants pour accéder à votre session</p>
+          </div>
+
+          {/* Formulaire */}
+          <form onSubmit={handleSubmit} className="space-y-6">
+            <div>
+              <Label htmlFor="email" className="block text-sm font-medium text-gray-700 mb-2">
+                Email
+              </Label>
+              <Input
+                id="email"
+                type="text"
+                placeholder="votre.email@pajopharma.com"
+                value={username}
+                onChange={(e) => setUsername(e.target.value)}
+                className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 bg-gray-50"
+                required
+                disabled={isLoading}
+              />
+            </div>
+
+            <div>
+              <Label htmlFor="password" className="block text-sm font-medium text-gray-700 mb-2">
+                Mot de passe
+              </Label>
+              <Input
+                id="password"
+                type="password"
+                placeholder="••••••••"
+                value={password}
+                onChange={(e) => setPassword(e.target.value)}
+                className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 bg-gray-50"
+                required
+                disabled={isLoading}
+              />
+            </div>
+
+            <Button
+              type="submit"
+              disabled={isLoading}
+              className="w-full bg-blue-600 hover:bg-blue-700 text-white py-3 px-4 rounded-lg font-medium transition-colors duration-200 disabled:opacity-50 disabled:cursor-not-allowed"
+            >
+              {isLoading ? 'Connexion...' : 'Se connecter'}
+            </Button>
+
+            <Button
+              type="button"
+              variant="destructive"
+              onClick={() => router.push('/')}
+              className="w-full bg-red-500 hover:bg-red-600 text-white py-3 px-4 rounded-lg font-medium transition-colors duration-200 flex items-center justify-center gap-2"
+            >
+              <ArrowLeft className="h-4 w-4" />
+              Retour à l'accueil
+            </Button>
           </form>
-        </CardContent>
-        <CardFooter className="flex justify-between">
-          {/* <Link href="/forgot-password">Mot de passe oublié?</Link> */}
-        </CardFooter>
-      </Card>
+        </div>
+      </div>
     </div>
   );
 }

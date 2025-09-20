@@ -4,8 +4,9 @@
 import { prisma } from '@/lib/prisma';
 import { getCurrentUser } from '@/lib/session';
 import { revalidatePath } from 'next/cache';
+import { SaleItemData } from '@/types/api';
 
-interface SaleItemData {
+interface LocalSaleItemData {
   medicationId: string;
   quantity: number;
   priceAtSale: number;
@@ -13,14 +14,14 @@ interface SaleItemData {
 
 export async function createSale(
   clientName: string,
+  additionalFees: number,
+  discount: number,
+  remarks: string,
+  items: LocalSaleItemData[],
   totalAmount: number,
   amountPaid: number,
   changeDue: number,
   paymentMethod: string,
-  additionalFees: number,
-  discount: number,
-  remarks: string,
-  items: SaleItemData[],
 ) {
   const user = await getCurrentUser();
 

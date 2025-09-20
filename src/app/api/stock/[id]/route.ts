@@ -3,10 +3,14 @@ import { PrismaClient } from '@prisma/client';
 
 const prisma = new PrismaClient();
 
-export async function GET(request: NextRequest, context: any) { // eslint-disable-line @typescript-eslint/no-explicit-any
+export async function GET(
+  request: NextRequest,
+  { params }: { params: Promise<{ id: string }> }
+) {
   try {
+    const { id } = await params;
     const stockItem = await prisma.medication.findUnique({
-      where: { id: context.params.id },
+      where: { id },
     });
     if (!stockItem) {
       return NextResponse.json({ error: 'Produit non trouvé' }, { status: 404 });
@@ -21,11 +25,15 @@ export async function GET(request: NextRequest, context: any) { // eslint-disabl
   }
 }
 
-export async function PUT(request: NextRequest, context: any) { // eslint-disable-line @typescript-eslint/no-explicit-any
+export async function PUT(
+  request: NextRequest,
+  { params }: { params: Promise<{ id: string }> }
+) {
   try {
+    const { id } = await params;
     const data = await request.json();
     const updatedStockItem = await prisma.medication.update({
-      where: { id: context.params.id },
+      where: { id },
       data,
     });
     return NextResponse.json(updatedStockItem);
@@ -38,10 +46,14 @@ export async function PUT(request: NextRequest, context: any) { // eslint-disabl
   }
 }
 
-export async function DELETE(request: NextRequest, context: any) { // eslint-disable-line @typescript-eslint/no-explicit-any
+export async function DELETE(
+  request: NextRequest,
+  { params }: { params: Promise<{ id: string }> }
+) {
   try {
+    const { id } = await params;
     await prisma.medication.delete({
-      where: { id: context.params.id },
+      where: { id },
     });
     return new NextResponse(null, { status: 204 });
   } catch (error: unknown) {

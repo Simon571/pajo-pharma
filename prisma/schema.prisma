@@ -1,6 +1,3 @@
-// This is your Prisma schema file,
-// learn more about it in the docs: https://pris.ly/d/prisma-schema
-
 generator client {
   provider = "prisma-client-js"
 }
@@ -11,89 +8,126 @@ datasource db {
 }
 
 model User {
-  id           String @id @default(cuid())
-  username     String @unique
+  id           String     @id @default(cuid())
+  username     String     @unique
   passwordHash String
-  role         String // "admin" or "seller"
-  sales        Sale[]
-  auditLogs    AuditLog[]
-  createdAt    DateTime @default(now())
-  updatedAt    DateTime @updatedAt
+  role         String
+  createdAt      DateTime        @default(now())
+  updatedAt      DateTime        @updatedAt
+  auditLogs      AuditLog[]
+  sales          Sale[]
+  expenses       Expense[]
+  stockMovements StockMovement[]
 }
 
 model Medication {
-  id                   String   @id @default(cuid())
-  name                 String
-  pharmaceuticalForm   String
-  purchasePrice        Float
-  price                Float
-  quantity             Int
-  expirationDate       DateTime
-  barcode              String?  @unique
-  isAvailableForSale   Boolean  @default(false)
-  saleItems            SaleItem[]
-  createdAt            DateTime @default(now())
-  updatedAt            DateTime @updatedAt
+  id                 String     @id @default(cuid())
+  name               String
+  pharmaceuticalForm String
+  purchasePrice      Float
+  price              Float
+  quantity           Int
+  expirationDate     DateTime
+  barcode            String?    @unique
+  isAvailableForSale Boolean         @default(false)
+  createdAt          DateTime        @default(now())
+  updatedAt          DateTime        @updatedAt
+  saleItems          SaleItem[]
+  stockMovements     StockMovement[]
 }
 
 model Client {
-  id        String @id @default(cuid())
+  id        String   @id @default(cuid())
   name      String
-  sales     Sale[]
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt
+  sales     Sale[]
 }
 
 model Sale {
-  id             String   @id @default(cuid())
-  date           DateTime @default(now())
+  id             String     @id @default(cuid())
+  date           DateTime   @default(now())
   totalAmount    Float
   amountPaid     Float
   changeDue      Float
   paymentMethod  String
-  additionalFees Float    @default(0)
-  discount       Float    @default(0)
-  remarks        String? // Optional remarks
-  items          SaleItem[]
-  seller         User     @relation(fields: [sellerId], references: [id])
+  additionalFees Float      @default(0)
+  discount       Float      @default(0)
+  remarks        String?
   sellerId       String
-  client         Client   @relation(fields: [clientId], references: [id])
   clientId       String
-  createdAt      DateTime @default(now())
-  updatedAt      DateTime @updatedAt
+  createdAt      DateTime   @default(now())
+  updatedAt      DateTime   @updatedAt
+  client         Client     @relation(fields: [clientId], references: [id])
+  seller         User       @relation(fields: [sellerId], references: [id])
+  items          SaleItem[]
 }
 
 model SaleItem {
-  id            String @id @default(cuid())
-  sale          Sale @relation(fields: [saleId], references: [id], onDelete: Cascade)
-  saleId        String
-  medication    Medication @relation(fields: [medicationId], references: [id])
-  medicationId  String
-  quantity      Int
-  priceAtSale   Float
+  id           String     @id @default(cuid())
+  saleId       String
+  medicationId String
+  quantity     Int
+  priceAtSale  Float
+  medication   Medication @relation(fields: [medicationId], references: [id])
+  sale         Sale       @relation(fields: [saleId], references: [id], onDelete: Cascade)
 }
 
 model AuditLog {
   id        String   @id @default(cuid())
-  action    String // e.g., "CREATE", "UPDATE", "DELETE"
-  model     String // e.g., "Medication", "User"
+  action    String
+  model     String
   recordId  String
-  user      User     @relation(fields: [userId], references: [id])
   userId    String
   timestamp DateTime @default(now())
   oldValue  String?
   newValue  String?
+  user      User     @relation(fields: [userId], references: [id])
 }
 
 model InvoiceSettings {
-  id            String @id @default(cuid())
-  companyName   String
+  id             String   @id @default(cuid())
+  companyName    String
   companyAddress String
-  companyPhone  String
-  companyEmail  String
-  headerText    String?
-  footerText    String?
-  logoUrl       String?
-  createdAt     DateTime @default(now())
-  updatedAt     DateTime @updatedAt
+  companyPhone   String
+  companyEmail   String
+  headerText     String?
+  footerText     String?
+  logoUrl        String?
+  createdAt      DateTime @default(now())
+  updatedAt      DateTime @updatedAt
+}
+
+model Expense {
+  id           String   @id @default(cuid())
+  description  String
+  amount       Float
+  category     String?
+  date         DateTime @default(now())
+  registeredBy String
+  userId       String
+  createdAt    DateTime @default(now())
+  updatedAt    DateTime @updatedAt
+  user         User     @relation(fields: [userId], references: [id])
+}
+
+// Mouvement de stock (entrées, sorties, corrections)
+model StockMovement {
+  id            String     @id @default(cuid())
+  medicationId  String
+  userId        String
+  type          MovementType
+  quantity      Int
+  reason        String?
+  previousStock Int        // stock avant l'opération
+  newStock      Int        // stock après
+  createdAt     DateTime   @default(now())
+  medication    Medication @relation(fields: [medicationId], references: [id])
+  user          User       @relation(fields: [userId], references: [id])
+}
+
+enum MovementType {
+  ENTRY
+  EXIT
+  CORRECTION
 }

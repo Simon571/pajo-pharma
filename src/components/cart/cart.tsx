@@ -19,17 +19,16 @@ export function Cart() {
   const { items, removeItem, updateItemQuantity } = useCartStore();
   const [clientName, setClientName] = useState('');
   const [lastSale] = useState<(Sale & { items: (SaleItem & { medication: Medication })[]; client: { name: string } }) | null>(null);
-  const [amountPaid, setAmountPaid] = useState(0);
   const router = useRouter();
 
   const invoiceRef = useRef<HTMLDivElement>(null);
 
   const handlePrint = useReactToPrint({
+    contentRef: invoiceRef,
     bodyClass: "printable-area",
   });
 
   const total = items.reduce((acc, item) => acc + item.price * item.quantityInCart, 0);
-  const change = amountPaid - total;
 
   const handleFinalizeSale = () => {
     if (items.length === 0) {
@@ -41,7 +40,7 @@ export function Cart() {
       return;
     }
 
-    router.push(`/seller/facture?clientName=${encodeURIComponent(clientName)}&amountPaid=${amountPaid}`);
+    router.push(`/seller/facture?clientName=${encodeURIComponent(clientName)}`);
   };
 
   return (
@@ -90,21 +89,7 @@ export function Cart() {
         </TableBody>
       </Table>
       <div className="mt-4 text-right">
-        <p className="text-lg font-bold">Total: {formatCurrency(total)}</p>
-        <div className="flex justify-end items-center mt-2">
-          <Label htmlFor="amountPaid" className="mr-2">Montant payé</Label>
-          <Input
-            id="amountPaid"
-            type="number"
-            value={amountPaid}
-            onChange={(e) => setAmountPaid(parseFloat(e.target.value) || 0)}
-            className="w-32"
-          />
-        </div>
-        {amountPaid > 0 && (
-          <p className="text-lg font-bold mt-2">Monnaie à rendre: {formatCurrency(change)}</p>
-        )}
-        <Button onClick={handleFinalizeSale} className="mt-2" disabled={items.length === 0 || !clientName}>Finaliser la vente</Button>
+        <Button onClick={handleFinalizeSale} className="mt-4" disabled={items.length === 0 || !clientName}>Finaliser la vente</Button>
         {lastSale && (
           <Button onClick={handlePrint} className="mt-2 ml-2">Imprimer la facture</Button>
         )}

@@ -13,7 +13,7 @@ export default withAuth(
 
     // If no token, redirect to appropriate login page
     if (!token) {
-      if (path.startsWith('/admin-dashboard') || path.startsWith('/medications') || path.startsWith('/sales') || path.startsWith('/users')) {
+      if (path.startsWith('/admin-dashboard') || path.startsWith('/medications') || path.startsWith('/sales') || path.startsWith('/users') || path.startsWith('/admin/')) {
         return NextResponse.redirect(new URL('/login-admin', req.url));
       }
       if (path.startsWith('/seller-dashboard') || path.startsWith('/sell')) {
@@ -24,7 +24,7 @@ export default withAuth(
     }
 
     // Admin access control
-    if (path.startsWith('/admin-dashboard') || path.startsWith('/medications') || path.startsWith('/sales') || path.startsWith('/users')) {
+    if (path.startsWith('/admin-dashboard') || path.startsWith('/medications') || path.startsWith('/sales') || path.startsWith('/users') || path.startsWith('/admin/')) {
       if (token.role !== 'admin') {
         return NextResponse.redirect(new URL('/login-admin', req.url)); // Redirect to admin login if not admin
       }
@@ -54,5 +54,6 @@ export const config = {
     '/sales/:path*',
     '/users/:path*',
     '/sell/:path*',
+    '/admin/:path*',
   ],
 };

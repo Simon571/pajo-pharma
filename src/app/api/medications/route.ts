@@ -13,6 +13,7 @@ export async function GET(req: NextRequest) {
   const searchParams = req.nextUrl.searchParams;
   const searchTerm = searchParams.get('search');
   const id = searchParams.get('id');
+  const includeStats = searchParams.get('includeStats') === 'true';
 
   if (id) {
     try {
@@ -30,13 +31,25 @@ export async function GET(req: NextRequest) {
   }
 
   try {
+    const available = searchParams.get('available');
+    const inStock = searchParams.get('inStock');
     let medications;
+    
+    // Construire la clause WHERE de base
+    const baseWhere: any = { isAvailableForSale: true };
+    
+    // Si on demande spécifiquement les médicaments en stock
+    if (inStock === 'true') {
+      baseWhere.quantity = { gt: 0 };
+    } else if (available === 'true') {
+      baseWhere.quantity = { gt: 0 };
+    }
+    
     if (searchTerm) {
       medications = await prisma.medication.findMany({
         where: {
           AND: [
-            { quantity: { gt: 0 } },
-            { isAvailableForSale: true },
+            baseWhere,
             {
               OR: [
                 { name: { contains: searchTerm } },
@@ -45,18 +58,21 @@ export async function GET(req: NextRequest) {
             },
           ],
         },
-        take: 10, // Limit results for search
+        take: inStock === 'true' ? 100 : 50, // Plus de résultats pour la vente
+        orderBy: { name: 'asc' },
       });
     } else {
-      // If no search term, fetch all medications
       medications = await prisma.medication.findMany({
-        where: {
-          isAvailableForSale: true,
-          quantity: { gt: 0 },
-        },
+        where: includeStats ? {} : baseWhere, // Pour l'inventaire, récupérer tous les médicaments
+        orderBy: { name: 'asc' },
       });
     }
-    return NextResponse.json(medications, { status: 200 });
+
+    if (includeStats) {
+      return NextResponse.json({ medications }, { status: 200 });
+    } else {
+      return NextResponse.json(medications, { status: 200 });
+    }
   // eslint-disable-next-line @typescript-eslint/no-explicit-any
   } catch (error: any) {
     console.error('Error fetching medications:', error);

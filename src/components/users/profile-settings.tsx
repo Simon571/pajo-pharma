@@ -1,24 +1,26 @@
 'use client';
 
 import { useState } from 'react';
-import { useSession, signOut } from 'next-auth/react';
+import { useSession } from 'next-auth/react';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { toast } from 'sonner';
 import Image from 'next/image';
+import { useSmartSignOut } from '@/hooks/use-smart-signout';
 
 
 
 export function ProfileSettings() {
   const { data: session, update } = useSession();
-  const [newUsername, setNewUsername] = useState(session?.user?.username || '');
+  const [newUsername, setNewUsername] = useState((session?.user as any)?.username || '');
   const [currentPassword, setCurrentPassword] = useState('');
   const [newPassword, setNewPassword] = useState('');
   const [confirmNewPassword, setConfirmNewPassword] = useState('');
   const [profileImage, setProfileImage] = useState(session?.user?.image || '');
   const [loading, setLoading] = useState(false);
+  const smartSignOut = useSmartSignOut();
 
   const handleUsernameUpdate = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -188,7 +190,7 @@ export function ProfileSettings() {
       </Card>
 
       <Button
-        onClick={() => signOut({ callbackUrl: '/' })}
+        onClick={smartSignOut}
         variant="destructive"
         className="w-full"
         disabled={loading}

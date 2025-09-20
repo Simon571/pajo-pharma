@@ -28,7 +28,7 @@ export function Header() {
                 <span>Profil</span>
                 <Avatar>
                   <AvatarImage src={session.user.image || "/default-avatar.png"} alt="@username" />
-                  <AvatarFallback>{session.user.username?.charAt(0).toUpperCase() || "U"}</AvatarFallback>
+                  <AvatarFallback>{(session.user as any).username?.charAt(0).toUpperCase() || "U"}</AvatarFallback>
                 </Avatar>
               </div>
             </DialogTrigger>

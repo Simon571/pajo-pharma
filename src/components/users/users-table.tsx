@@ -55,8 +55,12 @@ export function UsersTable() {
     }
   };
 
-  const handleEditClick = (user: User & { role: 'admin' | 'seller' }) => {
-    setEditingUser(user);
+  const handleEditClick = (user: User) => {
+    // The `User` type from Prisma has `role` as a string; narrow it to the
+    // expected union for the editing form by casting. This is a minimal,
+    // safe change to satisfy the type system during runtime the role value
+    // should already be one of the expected values.
+    setEditingUser(user as User & { role: 'admin' | 'seller' });
     setIsDialogOpen(true);
   };
 

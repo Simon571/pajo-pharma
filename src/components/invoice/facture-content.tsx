@@ -8,59 +8,44 @@ import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
-import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Textarea } from "@/components/ui/textarea";
 import { toast } from "sonner";
 import { createSale } from "@/lib/actions/sales";
 import { formatCurrency } from "@/lib/utils";
-import { useSession } from "next-auth/react"; // Import useSession
+import { useSession } from "next-auth/react";
 
 export default function FactureContent() {
   const router = useRouter();
   const searchParams = useSearchParams();
   const { items: cartItems, clearCart, updateItemQuantity } = useCartStore();
-  const { data: session } = useSession(); // Use useSession hook
+  const { data: session } = useSession();
 
   const [invoiceNumber, setInvoiceNumber] = useState("");
   const [invoiceDate, setInvoiceDate] = useState("");
   const [sellerName, setSellerName] = useState("Nom du Vendeur");
   const [clientName, setClientName] = useState("");
-  const [clientPhone, setClientPhone] = useState("");
-  const [clientAddress, setClientAddress] = useState("");
-  const [additionalFees] = useState(0);
-  const [discount] = useState(0);
-  const [amountGivenByClient, setAmountGivenByClient] = useState(0);
-  const [paymentMethod, setPaymentMethod] = useState("Espèces");
   const [saleTime, setSaleTime] = useState("");
   const [remarks, setRemarks] = useState("");
 
   useEffect(() => {
     const initialClientName = searchParams.get("clientName");
-    const initialAmountPaid = parseFloat(searchParams.get("amountPaid") || "0");
-
     if (initialClientName) setClientName(initialClientName);
-    if (initialAmountPaid) setAmountGivenByClient(initialAmountPaid);
 
-    // Set seller name from session
     if (session?.user?.name) {
       setSellerName(session.user.name);
     }
 
-    // Generate invoice number
     const date = new Date();
     const year = date.getFullYear();
     const dayOfYear = Math.floor((date.getTime() - new Date(year, 0, 0).getTime()) / 1000 / 60 / 60 / 24);
     const randomNum = Math.floor(Math.random() * 10000);
     setInvoiceNumber(`FCT-${year}-${String(dayOfYear).padStart(3, '0')}${String(randomNum).padStart(4, '0')}`);
 
-    // Set date and time
     setInvoiceDate(date.toLocaleDateString("fr-FR"));
     setSaleTime(date.toLocaleTimeString("fr-FR"));
-  }, [searchParams, session]); // Add session to dependency array
+  }, [searchParams, session]);
 
   const subtotal = cartItems.reduce((sum, item) => sum + item.price * item.quantityInCart, 0);
-  const totalToPay = subtotal + additionalFees - discount;
-  const changeDue = amountGivenByClient - totalToPay;
 
   const handleFinalizeSale = async () => {
     if (!session) {
@@ -69,18 +54,25 @@ export default function FactureContent() {
     }
 
     try {
-      
-
-      // Save the sale to the database
-      await createSale(clientName, totalToPay, amountGivenByClient, changeDue, paymentMethod, additionalFees, discount, remarks, cartItems.map(item => ({ medicationId: item.id, quantity: item.quantityInCart, priceAtSale: item.price })));
+      await createSale(
+        clientName,
+        0, // additionalFees
+        0, // discount
+        remarks,
+        cartItems.map(item => ({ 
+          medicationId: item.id, 
+          quantity: item.quantityInCart, 
+          priceAtSale: item.price 
+        })),
+        subtotal, // totalAmount
+        subtotal, // amountPaid
+        0, // changeDue
+        "Espèces" // paymentMethod
+      );
 
       toast.success("Vente enregistrée avec succès et facture générée!");
-      clearCart(); // Clear cart after successful save
-
-      // Trigger print
+      clearCart();
       window.print();
-
-      // Redirect after printing (with a small delay to allow print dialog to appear)
       setTimeout(() => {
         router.push("/seller-dashboard");
       }, 500);
@@ -113,10 +105,10 @@ export default function FactureContent() {
             <div>
               <Label htmlFor="clientName">Nom du client</Label>
               <Input id="clientName" value={clientName} onChange={(e) => setClientName(e.target.value)} />
-              <Label htmlFor="clientPhone" className="mt-2">Téléphone</Label>
-              <Input id="clientPhone" value={clientPhone} onChange={(e) => setClientPhone(e.target.value)} />
-              <Label htmlFor="clientAddress" className="mt-2">Adresse</Label>
-              <Input id="clientAddress" value={clientAddress} onChange={(e) => setClientAddress(e.target.value)} />
+              <div className="mt-4 p-3 bg-gray-50 rounded-lg border">
+                <p className="text-sm font-medium text-gray-700">Heure de sortie de la facture:</p>
+                <p className="text-lg font-bold text-blue-600">{saleTime}</p>
+              </div>
             </div>
           </div>
 
@@ -152,49 +144,23 @@ export default function FactureContent() {
             </TableBody>
           </Table>
 
-          
-
-          <div className="mt-6">
-            <p><strong>Paiement:</strong></p>
-            <div className="flex items-center mt-2">
-              <Label htmlFor="amountGivenByClient" className="mr-2">Montant donné par le client</Label>
-              <Input
-                id="amountGivenByClient"
-                type="number"
-                value={amountGivenByClient}
-                onChange={(e) => setAmountGivenByClient(parseFloat(e.target.value) || 0)}
-                className="w-32"
-              />
-            </div>
-            <p className="mt-2">Monnaie rendue: {formatCurrency(changeDue)}</p>
-            <div className="flex items-center mt-2">
-              <Label htmlFor="paymentMethod" className="mr-2">Mode de paiement</Label>
-              <Select value={paymentMethod} onValueChange={setPaymentMethod}>
-                <SelectTrigger className="w-[180px]">
-                  <SelectValue placeholder="Mode de paiement" />
-                </SelectTrigger>
-                <SelectContent>
-                  <SelectItem value="Espèces">Espèces</SelectItem>
-                  <SelectItem value="Mobile Money">Mobile Money</SelectItem>
-                  <SelectItem value="Carte">Carte</SelectItem>
-                </SelectContent>
-              </Select>
-            </div>
-            <p className="mt-2">Heure: {saleTime}</p>
+          <div className="mt-6 text-right">
+            <p className="text-xl font-bold">Total: {formatCurrency(subtotal)}</p>
           </div>
 
           <div className="mt-6">
             <Label htmlFor="remarks">Remarques</Label>
-            <Textarea id="remarks" value={remarks} onChange={(e) => setRemarks(e.target.value)} placeholder="Merci d’avoir choisi PAJO PHARMA." />
+            <Textarea 
+              id="remarks" 
+              value={remarks} 
+              onChange={(e) => setRemarks(e.target.value)} 
+              placeholder="Merci d'avoir choisi PAJO PHARMA." 
+            />
           </div>
 
           <div className="mt-6 text-sm text-gray-600 print:text-black">
-            <p>Cette facture est générée par un système agréé. Elle fait foi de preuve d’achat.</p>
+            <p>Cette facture est générée par un système agréé. Elle fait foi de preuve d'achat.</p>
             <p>Certains médicaments peuvent nécessiter une prescription. Conservez cette facture pour votre dossier médical.</p>
-          </div>
-
-          <div className="mt-6 text-center font-bold">
-            <p>Cachet & signature de la pharmacie – PAJO PHARMA</p>
           </div>
         </CardContent>
       </Card>

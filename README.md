@@ -1,36 +1,215 @@
-This is a [Next.js](https://nextjs.org) project bootstrapped with [`create-next-app`](https://nextjs.org/docs/app/api-reference/cli/create-next-app).
+# PAJO PHARMA - Système de Gestion de Pharmacie
 
-## Getting Started
+## 📖 Description
 
-First, run the development server:
+PAJO PHARMA est une application web complète de gestion de pharmacie développée avec Next.js 15, TypeScript, et Prisma. Elle permet la gestion des stocks, des ventes, des utilisateurs et des rapports financiers.
 
+## ✨ Fonctionnalités
+
+### 👨‍💼 Interface Administrateur
+- **Dashboard complet** avec statistiques en temps réel
+- **Gestion des médicaments** (CRUD, codes-barres, stocks)
+- **Gestion des utilisateurs** (admin/vendeur avec authentification)
+- **Rapports financiers** globaux et détaillés
+- **Inventaire** avec filtres et recherche
+- **Historique des mouvements de stock** (entrées, corrections)
+
+### 👩‍💻 Interface Vendeur
+- **Dashboard simplifié** avec ventes du jour
+- **Point de vente** intuitif avec scanner de codes-barres
+- **Gestion des expenses** personnelles
+- **Historique des ventes** personnelles
+
+### 🔐 Sécurité
+- **Authentification** NextAuth avec rôles (admin/seller)
+- **Middleware** de protection des routes
+- **Validation** des entrées API
+- **Headers de sécurité** configurés
+
+## 🛠️ Technologies
+
+- **Framework**: Next.js 15.3.5 (App Router)
+- **Language**: TypeScript 5
+- **Base de données**: Prisma ORM + SQLite (dev) / PostgreSQL (prod)
+- **Authentification**: NextAuth.js
+- **UI**: TailwindCSS + Shadcn/ui
+- **Icons**: Lucide React
+- **Validation**: React Hook Form + Zod
+- **State Management**: Zustand
+
+## 🚀 Installation
+
+### Prérequis
+- Node.js 18+
+- npm ou yarn
+- Git
+
+### Configuration
+
+1. **Cloner le projet**
 ```bash
-npm run dev
-# or
-yarn dev
-# or
-pnpm dev
-# or
-bun dev
+git clone [URL_DU_REPO]
+cd pajo-pharma
 ```
 
-Open [http://localhost:3000](http://localhost:3000) with your browser to see the result.
+2. **Installer les dépendances**
+```bash
+npm install
+```
 
-You can start editing the page by modifying `app/page.tsx`. The page auto-updates as you edit the file.
+3. **Configuration de l'environnement**
+```bash
+# Copier le fichier d'exemple
+cp .env.example .env.local
 
-This project uses [`next/font`](https://nextjs.org/docs/app/building-your-application/optimizing/fonts) to automatically optimize and load [Geist](https://vercel.com/font), a new font family for Vercel.
+# Éditer les variables d'environnement
+# NEXTAUTH_URL=http://localhost:3000
+# NEXTAUTH_SECRET=your-secret-key
+# DATABASE_URL="file:./dev.db"
+```
 
-## Learn More
+4. **Base de données**
+```bash
+# Générer le client Prisma
+npm run db:generate
 
-To learn more about Next.js, take a look at the following resources:
+# Appliquer les migrations
+npm run db:migrate
 
-- [Next.js Documentation](https://nextjs.org/docs) - learn about Next.js features and API.
-- [Learn Next.js](https://nextjs.org/learn) - an interactive Next.js tutorial.
+# Peupler la base de données (optionnel)
+npm run db:seed
+```
 
-You can check out [the Next.js GitHub repository](https://github.com/vercel/next.js) - your feedback and contributions are welcome!
+5. **Démarrer en développement**
+```bash
+npm run dev
+```
 
-## Deploy on Vercel
+L'application sera accessible sur `http://localhost:3000`
 
-The easiest way to deploy your Next.js app is to use the [Vercel Platform](https://vercel.com/new?utm_medium=default-template&filter=next.js&utm_source=create-next-app&utm_campaign=create-next-app-readme) from the creators of Next.js.
+## 📁 Structure du projet
 
-Check out our [Next.js deployment documentation](https://nextjs.org/docs/app/building-your-application/deploying) for more details.
+```
+pajo-pharma/
+├── src/
+│   ├── app/                    # Pages et API routes (App Router)
+│   │   ├── (app)/             # Routes protégées de l'application
+│   │   ├── admin/             # Pages administrateur
+│   │   ├── api/               # API endpoints
+│   │   └── login-*/           # Pages de connexion
+│   ├── components/            # Composants React
+│   │   ├── admin/            # Composants admin
+│   │   ├── auth/             # Composants d'authentification
+│   │   ├── ui/               # Composants UI de base
+│   │   └── ...
+│   ├── lib/                  # Utilitaires et configuration
+│   │   ├── actions/          # Server actions
+│   │   ├── store/            # État global (Zustand)
+│   │   ├── auth.ts           # Configuration NextAuth
+│   │   ├── prisma.ts         # Client Prisma
+│   │   └── ...
+│   └── types/                # Définitions TypeScript
+├── prisma/                   # Schéma et migrations
+├── public/                   # Assets statiques
+├── docs/                     # Documentation
+└── scripts/                  # Scripts utilitaires
+```
+
+## 🎯 Utilisation
+
+### Connexion
+- **Admin**: Accès complet à toutes les fonctionnalités
+- **Vendeur**: Accès limité aux ventes et dashboard personnel
+
+### Gestion des stocks
+1. **Ajouter des médicaments** via l'interface admin
+2. **Gérer les entrées/sorties** de stock
+3. **Suivre l'historique** des mouvements
+
+### Point de vente
+1. **Scanner ou saisir** les codes-barres
+2. **Calculer automatiquement** les totaux
+3. **Enregistrer les ventes** avec détails client
+
+### Rapports
+- **Dashboard temps réel** avec métriques clés
+- **Historique des ventes** filtrable
+- **Analyse financière** détaillée
+
+## 🧪 Tests et validation
+
+```bash
+# Vérification TypeScript
+npm run type-check
+
+# Linting
+npm run lint
+
+# Test de build
+npm run test:build
+
+# Validation base de données
+node scripts/validate-db.ts
+```
+
+## 📦 Déploiement
+
+Voir le guide détaillé : [DEPLOYMENT.md](./docs/DEPLOYMENT.md)
+
+### Production rapide
+```bash
+# Build
+npm run build
+
+# Démarrer
+npm run start:prod
+```
+
+## 🐛 Résolution de problèmes
+
+### Problèmes courants
+
+1. **Erreurs de build TypeScript**
+   ```bash
+   npm run type-check
+   ```
+
+2. **Problèmes de base de données**
+   ```bash
+   npm run db:reset
+   npm run db:migrate
+   ```
+
+3. **Erreurs d'authentification**
+   - Vérifiez `NEXTAUTH_SECRET` dans `.env.local`
+   - Redémarrez le serveur de développement
+
+## 📊 Surveillance et logs
+
+- **Logs de développement**: Console du navigateur + terminal
+- **Logs de production**: Voir `/api/log-error` et logs serveur
+- **Monitoring**: Dashboard admin avec métriques temps réel
+
+## 🤝 Contribution
+
+1. Fork le projet
+2. Créer une branche feature (`git checkout -b feature/nouvelle-fonctionnalite`)
+3. Commit les modifications (`git commit -m 'Ajouter nouvelle fonctionnalité'`)
+4. Push vers la branche (`git push origin feature/nouvelle-fonctionnalite`)
+5. Ouvrir une Pull Request
+
+## 📝 License
+
+Ce projet est sous licence privée. Tous droits réservés.
+
+## 📞 Support
+
+Pour toute question ou problème :
+- Consultez la documentation dans `/docs/`
+- Vérifiez les logs d'erreur
+- Contactez l'équipe de développement
+
+---
+
+**Version**: 1.0.0  
+**Dernière mise à jour**: Janvier 2025

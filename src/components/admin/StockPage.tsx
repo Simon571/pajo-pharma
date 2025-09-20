@@ -37,14 +37,15 @@ export default function StockPage() {
   });
 
   useEffect(() => {
-    fetch('/api/stock')
+    // Utiliser la même API que la page des médicaments pour la cohérence
+    fetch('/api/medications') // Tous les médicaments, pas seulement ceux en stock
       .then(res => res.json())
       .then(data => setStockItems(data));
   }, []);
 
   const onSubmit = async (data: z.input<typeof stockItemSchema>) => {
     if (editingItem) {
-      const response = await fetch(`/api/stock/${editingItem.id}`, {
+      const response = await fetch(`/api/medications/${editingItem.id}`, {
         method: 'PUT',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify(data),
@@ -52,7 +53,7 @@ export default function StockPage() {
       const updatedItem = await response.json();
       setStockItems(stockItems.map(item => item.id === editingItem.id ? updatedItem : item));
     } else {
-      const response = await fetch('/api/stock', {
+      const response = await fetch('/api/medications', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify(data),
@@ -72,14 +73,14 @@ export default function StockPage() {
   };
 
   const handleDelete = async (id: string) => {
-    await fetch(`/api/stock/${id}`, { method: 'DELETE' });
+    await fetch(`/api/medications/${id}`, { method: 'DELETE' });
     setStockItems(stockItems.filter(item => item.id !== id));
   };
 
   const handleToggleAvailability = async (id: string) => {
     const item = stockItems.find(item => item.id === id);
     if (item) {
-      const response = await fetch(`/api/stock/${id}`, {
+      const response = await fetch(`/api/medications/${id}`, {
         method: 'PUT',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ isAvailableForSale: !item.isAvailableForSale }),

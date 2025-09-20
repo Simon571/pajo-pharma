@@ -10,9 +10,10 @@ import { Button } from '@/components/ui/button';
 import { useCartStore } from '@/lib/store/cart';
 import { formatCurrency } from '@/lib/utils';
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from '@/components/ui/dialog';
-import { MedicationForm, formSchema } from './medication-form';
+import { MedicationForm } from './medication-form';
 import { toast } from 'sonner';
 import * as z from 'zod';
+import { useSession } from 'next-auth/react';
 
 export function MedicationsList() {
   const [medications, setMedications] = useState<Medication[]>([]);
@@ -20,6 +21,10 @@ export function MedicationsList() {
   const { addItem } = useCartStore();
   const [isDialogOpen, setIsDialogOpen] = useState(false);
   const [selectedMedication, setSelectedMedication] = useState<Medication | null>(null);
+  const { data: session } = useSession();
+  
+  // Check if user is admin
+  const isAdmin = session?.user?.role === 'admin';
 
   useEffect(() => {
     const fetchMedications = async () => {
@@ -40,7 +45,7 @@ export function MedicationsList() {
     console.log('Médicament ajouté au panier:', medication);
   };
 
-  const handleFormSubmit = async (data: z.input<typeof formSchema>) => {
+  const handleFormSubmit = async (data: any) => {
     const medicationData = {
       ...data,
       expirationDate: new Date(data.expirationDate).toISOString(),
@@ -80,17 +85,19 @@ export function MedicationsList() {
           onChange={(e) => setSearchTerm(e.target.value)}
           className="max-w-sm mr-2"
         />
-        <Dialog open={isDialogOpen} onOpenChange={setIsDialogOpen}>
-          <DialogTrigger asChild>
-            <Button onClick={() => setSelectedMedication(null)} className="ml-2">Ajouter un médicament</Button>
-          </DialogTrigger>
-          <DialogContent>
-            <DialogHeader>
-              <DialogTitle>{selectedMedication ? 'Modifier le médicament' : 'Ajouter un médicament'}</DialogTitle>
-            </DialogHeader>
-            <MedicationForm onSubmit={handleFormSubmit} medication={selectedMedication} />
-          </DialogContent>
-        </Dialog>
+        {isAdmin && (
+          <Dialog open={isDialogOpen} onOpenChange={setIsDialogOpen}>
+            <DialogTrigger asChild>
+              <Button onClick={() => setSelectedMedication(null)} className="ml-2">Ajouter un médicament</Button>
+            </DialogTrigger>
+            <DialogContent>
+              <DialogHeader>
+                <DialogTitle>{selectedMedication ? 'Modifier le médicament' : 'Ajouter un médicament'}</DialogTitle>
+              </DialogHeader>
+              <MedicationForm onSubmit={handleFormSubmit} medication={selectedMedication} />
+            </DialogContent>
+          </Dialog>
+        )}
       </div>
       
       <Table>
@@ -112,8 +119,12 @@ export function MedicationsList() {
               <TableCell>{new Date(medication.expirationDate).toLocaleDateString()}</TableCell>
               <TableCell>
               <Button onClick={() => { console.log('Bouton Ajouter au panier cliqué'); handleAddToCart(medication); }}>Ajouter au panier</Button>
-              <Button variant="outline" size="sm" onClick={() => { setSelectedMedication(medication); setIsDialogOpen(true); }} className="ml-2">Modifier</Button>
-              <Button variant="destructive" size="sm" onClick={() => handleDelete(medication.id)} className="ml-2">Supprimer</Button>
+              {isAdmin && (
+                <>
+                  <Button variant="outline" size="sm" onClick={() => { setSelectedMedication(medication); setIsDialogOpen(true); }} className="ml-2">Modifier</Button>
+                  <Button variant="destructive" size="sm" onClick={() => handleDelete(medication.id)} className="ml-2">Supprimer</Button>
+                </>
+              )}
             </TableCell>
             </TableRow>
           ))}

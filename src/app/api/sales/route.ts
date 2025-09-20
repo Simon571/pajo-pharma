@@ -19,11 +19,22 @@ export async function GET(req: NextRequest) {
   const searchParams = req.nextUrl.searchParams;
   const startDateParam = searchParams.get('startDate');
   const endDateParam = searchParams.get('endDate');
+  const todayParam = searchParams.get('today');
 
   // eslint-disable-next-line @typescript-eslint/no-explicit-any
   const whereClause: any = {};
 
-  if (startDateParam && endDateParam) {
+  if (todayParam === 'true') {
+    // Filtrer les ventes d'aujourd'hui uniquement
+    const today = new Date();
+    const startOfToday = new Date(today.getFullYear(), today.getMonth(), today.getDate());
+    const endOfToday = new Date(today.getFullYear(), today.getMonth(), today.getDate(), 23, 59, 59);
+    
+    whereClause.date = {
+      gte: startOfToday,
+      lte: endOfToday,
+    };
+  } else if (startDateParam && endDateParam) {
     whereClause.date = {
       gte: new Date(startDateParam),
       lte: new Date(endDateParam),
@@ -40,6 +51,12 @@ export async function GET(req: NextRequest) {
       orderBy: { date: 'desc' },
       include: { items: { include: { medication: true } }, client: true },
     });
+    
+    // Retourner dans le format attendu par la page daily-report
+    if (todayParam === 'true') {
+      return NextResponse.json({ sales }, { status: 200 });
+    }
+    
     return NextResponse.json(sales, { status: 200 });
   } catch (error: unknown) {
     console.error('Error fetching sales:', error);

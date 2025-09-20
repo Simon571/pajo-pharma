@@ -12,11 +12,12 @@ import { Medication } from '@prisma/client';
 const formSchema = z.object({
   name: z.string().min(1, 'Le nom est requis'),
   pharmaceuticalForm: z.string().min(1, 'La forme pharmaceutique est requise'),
-  purchasePrice: z.coerce.number().min(0, 'Le prix d\'achat doit être positif'),
+  purchasePrice: z.number().min(0, 'Le prix d\'achat doit être positif'),
   price: z.number().min(0, 'Le prix doit être positif'),
   quantity: z.number().int().min(0, 'La quantité doit être un entier positif'),
   expirationDate: z.string().refine((val) => !isNaN(Date.parse(val)), { message: 'Date invalide' }),
   barcode: z.string().min(1, 'Le code-barres est requis'),
+  isAvailableForSale: z.boolean().default(true),
 });
 
 interface MedicationFormProps {
@@ -35,6 +36,7 @@ export function MedicationForm({ onSubmit, medication }: MedicationFormProps) {
       quantity: medication?.quantity || 0,
       expirationDate: medication ? new Date(medication.expirationDate).toISOString().split('T')[0] : '',
       barcode: medication?.barcode || '',
+      isAvailableForSale: medication?.isAvailableForSale ?? true,
     },
   });
 
@@ -138,6 +140,27 @@ export function MedicationForm({ onSubmit, medication }: MedicationFormProps) {
                 <Input placeholder="Code-barres" {...field} />
               </FormControl>
               <FormMessage />
+            </FormItem>
+          )}
+        />
+        <FormField
+          control={form.control}
+          name="isAvailableForSale"
+          render={({ field }) => (
+            <FormItem className="flex flex-row items-start space-x-3 space-y-0">
+              <FormControl>
+                <input
+                  type="checkbox"
+                  checked={field.value}
+                  onChange={field.onChange}
+                  className="mt-2"
+                />
+              </FormControl>
+              <div className="space-y-1 leading-none">
+                <FormLabel>
+                  Disponible à la vente
+                </FormLabel>
+              </div>
             </FormItem>
           )}
         />

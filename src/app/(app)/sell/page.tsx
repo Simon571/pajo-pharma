@@ -6,7 +6,9 @@ import { Button } from '@/components/ui/button';
 import { Table, TableHeader, TableRow, TableHead, TableBody, TableCell } from '@/components/ui/table';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { toast } from 'sonner';
-import { PlusCircle, MinusCircle, Trash2, Printer, Scan } from 'lucide-react';
+import { PlusCircle, MinusCircle, Trash2, Printer, Scan, Loader2 } from 'lucide-react';
+import { useDebounce } from '@/hooks/use-debounce';
+import { fetchMedications } from '@/lib/api-utils';
 import { useReactToPrint } from 'react-to-print';
 import React from 'react';
 import { formatCurrency } from '@/lib/utils';
@@ -33,27 +35,48 @@ export default function SellPage() {
   const [medications, setMedications] = useState<Medication[]>([]);
   const [cart, setCart] = useState<CartItem[]>([]);
   const [clientName, setClientName] = useState('');
-  const [amountPaid, setAmountPaid] = useState<number | ''>('');
+  const [sortBy, setSortBy] = useState<'name' | 'price' | 'stock'>('name');
+  const [showOutOfStock, setShowOutOfStock] = useState(false);
+  const [isLoading, setIsLoading] = useState(false);
+  const [isTyping, setIsTyping] = useState(false);
   const printRef = React.useRef(null);
   const [isScannerOpen, setIsScannerOpen] = useState(false);
 
+  // Debounce du terme de recherche pour éviter trop d'appels API
+  const debouncedSearchTerm = useDebounce(searchTerm, 300);
+
+  // Effet pour détecter la saisie en cours
   useEffect(() => {
-    const fetchMedications = async () => {
-      if (searchTerm.length > 2) {
-        try {
-          const res = await fetch(`/api/medications?search=${searchTerm}`);
-          const data = await res.json();
-          setMedications(data);
-        } catch (error) {
-          console.error('Failed to fetch medications:', error);
-          toast.error('Erreur lors de la recherche des médicaments.');
-        }
-      } else {
-        setMedications([]);
+    if (searchTerm !== debouncedSearchTerm) {
+      setIsTyping(true);
+    } else {
+      setIsTyping(false);
+    }
+  }, [searchTerm, debouncedSearchTerm]);
+
+  useEffect(() => {
+    const fetchMedicationsData = async () => {
+      try {
+        setIsLoading(true);
+        
+        const params = {
+          inStock: true,
+          ...(debouncedSearchTerm.length > 0 && { search: debouncedSearchTerm })
+        };
+        
+        const data = await fetchMedications(params);
+        setMedications(data);
+        
+      } catch (error) {
+        console.error('Failed to fetch medications:', error);
+        setMedications([]); // S'assurer que medications reste un array
+        toast.error('Erreur lors de la recherche des médicaments.');
+      } finally {
+        setIsLoading(false);
       }
     };
-    fetchMedications();
-  }, [searchTerm]);
+    fetchMedicationsData();
+  }, [debouncedSearchTerm]);
 
   const addToCart = useCallback((medication: Medication) => {
     setCart((prevCart) => {
@@ -103,17 +126,15 @@ export default function SellPage() {
   };
 
   const totalAmount = cart.reduce((sum, item) => sum + item.medication.price * item.quantity, 0);
-  const changeDue = typeof amountPaid === 'number' ? amountPaid - totalAmount : 0;
 
   const handlePrint = useReactToPrint({
-    content: () => printRef.current,
+    contentRef: printRef,
     documentTitle: `Facture_${Date.now()}`,
     onAfterPrint: () => {
       // Save sale to DB after printing
       saveSale();
     },
-  // eslint-disable-next-line @typescript-eslint/no-explicit-any
-  } as any);
+  });
 
   const saveSale = async () => {
     if (cart.length === 0) {
@@ -142,7 +163,6 @@ export default function SellPage() {
         toast.success('Vente enregistrée avec succès!');
         setCart([]);
         setClientName('');
-        setAmountPaid('');
       } else {
         const data = await res.json();
         toast.error(`Erreur lors de l\'enregistrement de la vente: ${data.message || 'Une erreur est survenue.'}`);
@@ -184,40 +204,177 @@ export default function SellPage() {
         <div className="lg:col-span-3">
           <Card className="mb-8">
             <CardHeader>
-              <CardTitle>Rechercher et Ajouter des Médicaments</CardTitle>
+              <CardTitle>Médicaments en Stock</CardTitle>
             </CardHeader>
             <CardContent>
-              <div className="flex space-x-2 mb-4">
-                <Input
-                  placeholder="Rechercher un médicament (nom ou code-barres)"
-                  value={searchTerm}
-                  onChange={(e) => setSearchTerm(e.target.value)}
-                  className="flex-grow"
-                />
-                <Button onClick={() => setIsScannerOpen(true)} variant="outline" size="icon">
-                  <Scan className="h-5 w-5" />
-                </Button>
+              {/* Barre de recherche et filtres */}
+              <div className="space-y-4 mb-6">
+                <div className="flex space-x-2">
+                  <div className="relative flex-grow">
+                    <Input
+                      placeholder="Rechercher un médicament (nom ou code-barres)"
+                      value={searchTerm}
+                      onChange={(e) => setSearchTerm(e.target.value)}
+                      className="flex-grow pr-10"
+                      onKeyDown={(e) => {
+                        if (e.key === 'Enter') e.preventDefault();
+                        if (e.key === 'Escape') setSearchTerm('');
+                      }}
+                    />
+                    {(isLoading || isTyping) && (
+                      <div className="absolute right-3 top-1/2 transform -translate-y-1/2">
+                        <Loader2 className="h-4 w-4 animate-spin text-blue-500" />
+                      </div>
+                    )}
+                  </div>
+                  <Button 
+                    onClick={() => setSearchTerm('')} 
+                    variant="outline"
+                    title="Effacer la recherche"
+                  >
+                    Effacer
+                  </Button>
+                  <Button onClick={() => setIsScannerOpen(true)} variant="outline" size="icon">
+                    <Scan className="h-5 w-5" />
+                  </Button>
+                </div>
+                
+                {/* Résultats de recherche */}
+                {searchTerm && (
+                  <div className="text-sm text-gray-600 bg-blue-50 p-2 rounded">
+                    {isTyping ? (
+                      <span className="flex items-center gap-2">
+                        <Loader2 className="h-4 w-4 animate-spin" />
+                        Recherche en cours...
+                      </span>
+                    ) : isLoading ? (
+                      <span className="flex items-center gap-2">
+                        <Loader2 className="h-4 w-4 animate-spin" />
+                        Chargement des résultats...
+                      </span>
+                    ) : (
+                      <span>
+                        {medications.length} résultat{medications.length !== 1 ? 's' : ''} trouvé{medications.length !== 1 ? 's' : ''} 
+                        pour "{searchTerm}"
+                      </span>
+                    )}
+                  </div>
+                )}
+                
+                {/* Options de tri et filtrage */}
+                <div className="flex flex-wrap gap-4 items-center">
+                  <div className="flex items-center space-x-2">
+                    <Label htmlFor="sort-select">Trier par:</Label>
+                    <select 
+                      id="sort-select"
+                      value={sortBy} 
+                      onChange={(e) => setSortBy(e.target.value as 'name' | 'price' | 'stock')}
+                      className="px-3 py-1 border rounded-md"
+                    >
+                      <option value="name">Nom</option>
+                      <option value="price">Prix</option>
+                      <option value="stock">Stock</option>
+                    </select>
+                  </div>
+                  <div className="flex items-center space-x-2">
+                    <input
+                      type="checkbox"
+                      id="show-out-of-stock"
+                      checked={showOutOfStock}
+                      onChange={(e) => setShowOutOfStock(e.target.checked)}
+                    />
+                    <Label htmlFor="show-out-of-stock">Afficher ruptures de stock</Label>
+                  </div>
+                  <Button 
+                    variant="outline" 
+                    onClick={() => window.location.reload()}
+                    className="text-sm"
+                  >
+                    Recharger
+                  </Button>
+                </div>
               </div>
-              {medications.length > 0 && (
-                <div className="border rounded-md max-h-60 overflow-y-auto">
+
+              {/* Liste des médicaments */}
+              {medications.length > 0 ? (
+                <div className="border rounded-md max-h-96 overflow-y-auto">
                   <Table>
+                    <TableHeader>
+                      <TableRow>
+                        <TableHead>Médicament</TableHead>
+                        <TableHead>Prix</TableHead>
+                        <TableHead>Stock</TableHead>
+                        <TableHead>Status</TableHead>
+                        <TableHead className="text-right">Action</TableHead>
+                      </TableRow>
+                    </TableHeader>
                     <TableBody>
-                      {medications.map((med) => (
-                        <TableRow key={med.id}>
-                          <TableCell>{med.name}</TableCell>
-                          <TableCell>
+                      {Array.isArray(medications) ? medications
+                        .filter(med => showOutOfStock || med.quantity > 0)
+                        .sort((a, b) => {
+                          if (sortBy === 'name') return a.name.localeCompare(b.name);
+                          if (sortBy === 'price') return a.price - b.price;
+                          if (sortBy === 'stock') return b.quantity - a.quantity;
+                          return 0;
+                        })
+                        .map((med) => (
+                        <TableRow key={med.id} className={med.quantity === 0 ? 'opacity-50' : ''}>
+                          <TableCell className="font-medium">{med.name}</TableCell>
+                          <TableCell className="font-semibold text-green-600">
                             {formatCurrency(med.price)}
                           </TableCell>
-                          <TableCell>{med.quantity} en stock</TableCell>
+                          <TableCell>
+                            <span className={`font-medium ${
+                              med.quantity > 10 ? 'text-green-600' : 
+                              med.quantity > 0 ? 'text-orange-600' : 'text-red-600'
+                            }`}>
+                              {med.quantity}
+                            </span>
+                          </TableCell>
+                          <TableCell>
+                            {med.quantity > 10 ? (
+                              <span className="inline-flex items-center px-2 py-1 rounded-full text-xs bg-green-100 text-green-800">
+                                Disponible
+                              </span>
+                            ) : med.quantity > 0 ? (
+                              <span className="inline-flex items-center px-2 py-1 rounded-full text-xs bg-orange-100 text-orange-800">
+                                Stock faible
+                              </span>
+                            ) : (
+                              <span className="inline-flex items-center px-2 py-1 rounded-full text-xs bg-red-100 text-red-800">
+                                Rupture
+                              </span>
+                            )}
+                          </TableCell>
                           <TableCell className="text-right">
-                            <Button size="sm" onClick={() => addToCart(med)}>
+                            <Button 
+                              size="sm" 
+                              onClick={() => addToCart(med)}
+                              disabled={med.quantity === 0}
+                              className="bg-blue-600 hover:bg-blue-700"
+                            >
+                              <PlusCircle className="h-4 w-4 mr-1" />
                               Ajouter
                             </Button>
                           </TableCell>
                         </TableRow>
-                      ))}
+                      )) : []}
                     </TableBody>
                   </Table>
+                </div>
+              ) : (
+                <div className="text-center py-8 text-gray-500">
+                  {searchTerm ? (
+                    <div>
+                      <p>Aucun médicament trouvé pour "{searchTerm}"</p>
+                      <p className="text-sm">Essayez avec un autre terme de recherche</p>
+                    </div>
+                  ) : (
+                    <div>
+                      <p>Aucun médicament en stock trouvé</p>
+                      <p className="text-sm">Vérifiez les stocks dans la section "Stock"</p>
+                    </div>
+                  )}
                 </div>
               )}
             </CardContent>
@@ -225,11 +382,21 @@ export default function SellPage() {
 
           <Card>
             <CardHeader>
-              <CardTitle>Panier</CardTitle>
+              <CardTitle className="flex items-center justify-between">
+                Panier 
+                {cart.length > 0 && (
+                  <span className="text-sm font-normal bg-blue-100 text-blue-800 px-2 py-1 rounded-full">
+                    {cart.length} article{cart.length > 1 ? 's' : ''}
+                  </span>
+                )}
+              </CardTitle>
             </CardHeader>
             <CardContent>
               {cart.length === 0 ? (
-                <p className="text-muted-foreground">Le panier est vide.</p>
+                <div className="text-center py-8 text-gray-500">
+                  <p>Le panier est vide</p>
+                  <p className="text-sm">Ajoutez des médicaments pour commencer une vente</p>
+                </div>
               ) : (
                 <Table>
                   <TableHeader>
@@ -297,33 +464,82 @@ export default function SellPage() {
             <CardHeader>
               <CardTitle>Finaliser la Vente</CardTitle>
             </CardHeader>
-            <CardContent>
-              <div className="mb-4">
+            <CardContent className="space-y-4">
+              {/* Résumé de la vente */}
+              <div className="bg-gray-50 p-4 rounded-lg">
+                <h3 className="font-semibold mb-2">Résumé</h3>
+                <div className="space-y-1 text-sm">
+                  <div className="flex justify-between">
+                    <span>Articles:</span>
+                    <span>{cart.reduce((sum, item) => sum + item.quantity, 0)}</span>
+                  </div>
+                  <div className="flex justify-between font-semibold text-lg border-t pt-1">
+                    <span>Total:</span>
+                    <span className="text-green-600">{formatCurrency(totalAmount)}</span>
+                  </div>
+                </div>
+              </div>
+
+              {/* Informations client */}
+              <div>
+                <Label htmlFor="client-name">Nom du client (facultatif)</Label>
                 <Input
-                  placeholder="Nom du client (facultatif)"
+                  id="client-name"
+                  placeholder="Nom du client"
                   value={clientName}
                   onChange={(e) => setClientName(e.target.value)}
+                  className="mt-1"
                 />
               </div>
-              <div className="mb-4">
-                <Label htmlFor="amountPaid">Montant payé (CDF)</Label>
-                <Input
-                  id="amountPaid"
-                  type="number"
-                  placeholder="Montant payé par le client"
-                  value={amountPaid}
-                  onChange={(e) => setAmountPaid(parseFloat(e.target.value) || '')}
-                />
+
+              {/* Boutons d'action */}
+              <div className="space-y-2 pt-4">
+                <Button 
+                  onClick={handlePrint} 
+                  className="w-full bg-blue-600 hover:bg-blue-700"
+                  disabled={cart.length === 0}
+                >
+                  <Printer className="mr-2 h-4 w-4" /> 
+                  Générer & Imprimer Facture
+                </Button>
+                <Button 
+                  onClick={saveSale} 
+                  className="w-full" 
+                  variant="outline"
+                  disabled={cart.length === 0}
+                >
+                  Vente Rapide (Sans facture)
+                </Button>
               </div>
-              <div className="mb-4 text-lg font-semibold">
-                Monnaie à rendre: {formatCurrency(changeDue)}
+            </CardContent>
+          </Card>
+
+          {/* Statistiques rapides */}
+          <Card className="mt-4">
+            <CardHeader>
+              <CardTitle className="text-lg">Statistiques</CardTitle>
+            </CardHeader>
+            <CardContent>
+              <div className="space-y-2 text-sm">
+                <div className="flex justify-between">
+                  <span>Médicaments disponibles:</span>
+                  <span className="font-semibold text-green-600">
+                    {Array.isArray(medications) ? medications.filter(m => m.quantity > 0).length : 0}
+                  </span>
+                </div>
+                <div className="flex justify-between">
+                  <span>Stock faible:</span>
+                  <span className="font-semibold text-orange-600">
+                    {Array.isArray(medications) ? medications.filter(m => m.quantity > 0 && m.quantity <= 10).length : 0}
+                  </span>
+                </div>
+                <div className="flex justify-between">
+                  <span>Ruptures de stock:</span>
+                  <span className="font-semibold text-red-600">
+                    {Array.isArray(medications) ? medications.filter(m => m.quantity === 0).length : 0}
+                  </span>
+                </div>
               </div>
-              <Button onClick={handlePrint} className="w-full mb-2">
-                <Printer className="mr-2 h-4 w-4" /> Générer & Imprimer Facture
-              </Button>
-              <Button onClick={saveSale} className="w-full" variant="outline">
-                Facture Simplifiée (1 clic)
-              </Button>
             </CardContent>
           </Card>
         </div>
