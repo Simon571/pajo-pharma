@@ -33,37 +33,21 @@ jobs:
           distribution: 'temurin'
           java-version: '17'
 
-      - name: Install Android SDK command-line tools
-        run: |
-          sudo mkdir -p $ANDROID_SDK_ROOT/cmdline-tools
-          sudo chown -R $USER $ANDROID_SDK_ROOT
-          curl -o /tmp/commandlinetools.zip https://dl.google.com/android/repository/commandlinetools-linux-9477386_latest.zip
-          unzip -q /tmp/commandlinetools.zip -d $ANDROID_SDK_ROOT/cmdline-tools
-          mv $ANDROID_SDK_ROOT/cmdline-tools/cmdline-tools $ANDROID_SDK_ROOT/cmdline-tools/latest
-          yes | $ANDROID_SDK_ROOT/cmdline-tools/latest/bin/sdkmanager --sdk_root=$ANDROID_SDK_ROOT --licenses
+      - name: Set up Android SDK (action)
+        uses: r0adkll/setup-android@v2
+        with:
+          api-levels: '33'
+          build-tools: '33.0.2'
+          components: 'platform-tools'
+          # install command-line-tools automatically
+          force-yes: true
+          sdk_root: ${{ env.ANDROID_SDK_ROOT }}
 
-      - name: Install SDK platforms and build-tools
+      - name: Ensure ANDROID_HOME and PATH
         run: |
           export ANDROID_HOME=$ANDROID_SDK_ROOT
           echo "ANDROID_SDK_ROOT=$ANDROID_SDK_ROOT"
-          echo "Listing cmdline-tools dir:"
-          ls -la $ANDROID_SDK_ROOT/cmdline-tools || true
-          echo "Running sdkmanager to install platform-tools, platforms;android-33, build-tools;33.0.2"
-          # Retry sdkmanager up to 3 times to handle transient network or lock issues
-          set -e
-          RETRIES=0
-          MAX_RETRIES=3
-          until [ $RETRIES -ge $MAX_RETRIES ]
-          do
-            $ANDROID_SDK_ROOT/cmdline-tools/latest/bin/sdkmanager --sdk_root=$ANDROID_SDK_ROOT --verbose "platform-tools" "platforms;android-33" "build-tools;33.0.2" && break
-            RETRIES=$((RETRIES+1))
-            echo "sdkmanager failed, attempt $RETRIES/$MAX_RETRIES"
-            sleep 3
-          done
-          if [ $RETRIES -ge $MAX_RETRIES ]; then
-            echo "sdkmanager failed after $MAX_RETRIES attempts" >&2
-            exit 1
-          fi
+          echo "$ANDROID_SDK_ROOT/platform-tools" >> $GITHUB_PATH
 
       - name: Add platform-tools to PATH
         run: echo "$ANDROID_SDK_ROOT/platform-tools" >> $GITHUB_PATH
