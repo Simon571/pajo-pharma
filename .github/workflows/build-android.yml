@@ -33,8 +33,7 @@ jobs:
 
       - name: Install SDK platforms and build-tools
         run: |
-          $ANDROID_HOME=$ANDROID_SDK_ROOT
-          export ANDROID_HOME
+          export ANDROID_HOME=$ANDROID_SDK_ROOT
           $ANDROID_SDK_ROOT/cmdline-tools/latest/bin/sdkmanager --sdk_root=$ANDROID_SDK_ROOT "platform-tools" "platforms;android-33" "build-tools;33.0.2"
 
       - name: Add platform-tools to PATH
