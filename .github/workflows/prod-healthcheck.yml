@@ -1,0 +1,27 @@
+name: Prod healthcheck
+
+on:
+  workflow_dispatch:
+  schedule:
+    - cron: '0 * * * *' # every hour
+
+jobs:
+  healthcheck:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Setup Node
+        uses: actions/setup-node@v4
+        with:
+          node-version: '18'
+
+      - name: Install
+        run: npm ci
+
+      - name: Run prod healthcheck (public only)
+        env:
+          PROD_ADMIN_USERNAME: ${{ secrets.PROD_ADMIN_USERNAME }}
+          PROD_ADMIN_PASSWORD: ${{ secrets.PROD_ADMIN_PASSWORD }}
+        run: node ./scripts/check-public.js
