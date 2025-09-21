@@ -6,8 +6,11 @@ export default withAuth(
     const { token } = req.nextauth;
     const path = req.nextUrl.pathname;
 
-    // Allow access to specific login pages and API routes
-    if (path.startsWith('/login-admin') || path.startsWith('/login-seller') || path.startsWith('/api/auth')) {
+    // Allow access to specific login pages and ALL API routes
+    if (path.startsWith('/login-admin') || 
+        path.startsWith('/login-seller') || 
+        path.startsWith('/login-common') ||
+        path.startsWith('/api/')) {
       return NextResponse.next();
     }
 
@@ -48,12 +51,13 @@ export default withAuth(
 
 export const config = {
   matcher: [
-    '/admin-dashboard/:path*',
-    '/seller-dashboard/:path*',
-    '/medications/:path*',
-    '/sales/:path*',
-    '/users/:path*',
-    '/sell/:path*',
-    '/admin/:path*',
+    /*
+     * Match all request paths except for the ones starting with:
+     * - api (API routes)
+     * - _next/static (static files)
+     * - _next/image (image optimization files)
+     * - favicon.ico (favicon file)
+     */
+    '/((?!api|_next/static|_next/image|favicon.ico).*)',
   ],
 };
