@@ -52,8 +52,8 @@ export async function GET(req: NextRequest) {
             baseWhere,
             {
               OR: [
-                { name: { contains: searchTerm } },
-                { barcode: { contains: searchTerm } },
+                { name: { contains: searchTerm, mode: 'insensitive' } },
+                { barcode: { contains: searchTerm, mode: 'insensitive' } },
               ],
             },
           ],
@@ -65,13 +65,20 @@ export async function GET(req: NextRequest) {
       medications = await prisma.medication.findMany({
         where: includeStats ? {} : baseWhere, // Pour l'inventaire, récupérer tous les médicaments
         orderBy: { name: 'asc' },
+        // Limiter même les requêtes sans recherche pour la vente
+        ...(inStock === 'true' && !includeStats && { take: 500 })
       });
     }
 
+    // Déduplication côté serveur par ID (au cas où)
+    const uniqueMedications = Array.from(
+      new Map(medications.map(med => [med.id, med])).values()
+    );
+
     if (includeStats) {
-      return NextResponse.json({ medications }, { status: 200 });
+      return NextResponse.json({ medications: uniqueMedications }, { status: 200 });
     } else {
-      return NextResponse.json(medications, { status: 200 });
+      return NextResponse.json(uniqueMedications, { status: 200 });
     }
   // eslint-disable-next-line @typescript-eslint/no-explicit-any
   } catch (error: any) {

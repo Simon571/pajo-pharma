@@ -63,7 +63,24 @@ export default function VentesPage() {
         };
         
         const data = await fetchMedications(params);
-        setMedications(data);
+        
+        // Si on fait une recherche mais qu'on ne trouve rien, charger tous les médicaments
+        // et laisser le filtrage côté client s'en occuper
+        if (debouncedSearchTerm.length > 0 && data.length === 0) {
+          console.log('Recherche API vide, chargement de tous les médicaments pour filtrage côté client');
+          const allData = await fetchMedications({ inStock: true });
+          // S'assurer qu'on ne duplique pas - utiliser un Set pour éliminer les doublons par ID
+          const uniqueMedications = Array.from(
+            new Map(allData.map(med => [med.id, med])).values()
+          );
+          setMedications(uniqueMedications);
+        } else {
+          // Éliminer les doublons potentiels même pour les résultats normaux
+          const uniqueData = Array.from(
+            new Map(data.map(med => [med.id, med])).values()
+          );
+          setMedications(uniqueData);
+        }
         
       } catch (error) {
         console.error('Failed to fetch medications:', error);
@@ -73,6 +90,8 @@ export default function VentesPage() {
         setIsLoading(false);
       }
     };
+
+    // Toujours charger les médicaments (avec ou sans recherche)
     fetchMedicationsData();
   }, [debouncedSearchTerm]);
 
@@ -97,9 +116,10 @@ export default function VentesPage() {
         }
       }
     });
-    setSearchTerm('');
-    setMedications([]);
-  }, [setCart, setSearchTerm, setMedications]);
+    // Ne pas vider la recherche ni la liste après ajout au panier
+    // setSearchTerm('');
+    // setMedications([]);
+  }, [setCart]);
 
   const updateCartQuantity = (medicationId: string, delta: number) => {
     setCart((prevCart) => {
@@ -193,7 +213,28 @@ export default function VentesPage() {
   }, []);
 
   const filteredAndSortedMedications = medications
-    .filter(m => showOutOfStock || m.quantity > 0)
+    .filter(m => {
+      // Filtrage par stock si nécessaire
+      if (!showOutOfStock && m.quantity <= 0) return false;
+      
+      // Filtrage côté client par terme de recherche (backup)
+      if (searchTerm && searchTerm.length > 0) {
+        const searchLower = searchTerm.toLowerCase();
+        return m.name.toLowerCase().includes(searchLower) || 
+               (m.barcode && m.barcode.toLowerCase().includes(searchLower));
+      }
+      
+      return true;
+    })
+    // Déduplication des vrais doublons (même nom + même prix + même stock)
+    .filter((medication, index, array) => {
+      const duplicateIndex = array.findIndex(m => 
+        m.name === medication.name && 
+        m.price === medication.price && 
+        m.quantity === medication.quantity
+      );
+      return duplicateIndex === index; // Garder seulement la première occurrence
+    })
     .sort((a, b) => {
       switch (sortBy) {
         case 'name':
@@ -251,16 +292,14 @@ export default function VentesPage() {
                 </Button>
               </div>
 
-              {(isLoading || isTyping) && (
+              {isLoading && (
                 <div className="flex items-center justify-center py-8">
                   <Loader2 className="h-6 w-6 animate-spin mr-2" />
-                  <span className="text-gray-600">
-                    {isTyping ? 'Saisie en cours...' : 'Recherche...'}
-                  </span>
+                  <span className="text-gray-600">Recherche...</span>
                 </div>
               )}
 
-              {!isLoading && !isTyping && medications.length > 0 && (
+              {!isLoading && medications.length > 0 && (
                 <div className="border rounded-lg">
                   <Table>
                     <TableHeader>
