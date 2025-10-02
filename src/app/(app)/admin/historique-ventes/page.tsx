@@ -1,11 +1,11 @@
 "use client";
 
 import { useEffect, useState } from "react";
-import { getAllSales } from "@/lib/actions/sales";
 import { Sale, SaleItem, User, Client, Medication } from "@prisma/client";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
 import { formatCurrency } from "@/lib/utils";
+import { Button } from "@/components/ui/button";
 
 interface SaleWithDetails extends Sale {
   seller: User;
@@ -21,8 +21,10 @@ export default function HistoriqueVentesPage() {
   useEffect(() => {
     const fetchSales = async () => {
       try {
-        const fetchedSales = await getAllSales();
-        setSales(fetchedSales as SaleWithDetails[]);
+        const res = await fetch('/api/sales', { cache: 'no-store' });
+        if (!res.ok) throw new Error('HTTP ' + res.status);
+        const data = await res.json();
+        setSales(data as SaleWithDetails[]);
       } catch (err) {
         console.error("Failed to fetch sales:", err);
         setError("Erreur lors du chargement de l&apos;historique des ventes.");
@@ -43,7 +45,27 @@ export default function HistoriqueVentesPage() {
 
   return (
     <div className="container mx-auto p-4">
-      <h1 className="text-3xl font-bold mb-6">Historique des Ventes</h1>
+      <div className="flex items-center justify-between mb-6">
+        <h1 className="text-3xl font-bold">Historique des Ventes</h1>
+        <Button
+          variant="outline"
+          onClick={async () => {
+            setLoading(true);
+            try {
+              const res = await fetch('/api/sales', { cache: 'no-store' });
+              const data = await res.json();
+              setSales(data as SaleWithDetails[]);
+            } catch (e) {
+              console.error(e);
+              setError("Erreur lors du chargement de l&apos;historique des ventes.");
+            } finally {
+              setLoading(false);
+            }
+          }}
+        >
+          Actualiser
+        </Button>
+      </div>
 
       <Card>
         <CardHeader>

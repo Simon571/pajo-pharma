@@ -1,4 +1,4 @@
-const CACHE_NAME = 'pajo-pharma-v1';
+const CACHE_NAME = 'pajo-pharma-v2';
 const urlsToCache = [
   '/',
   '/static/css/',
@@ -22,37 +22,45 @@ self.addEventListener('install', (event) => {
 
 // Interception des requêtes réseau
 self.addEventListener('fetch', (event) => {
+  const { request } = event;
+  const url = new URL(request.url);
+
+  // Ne JAMAIS mettre en cache les APIs ou les requêtes JSON/Next data
+  const isApi = url.pathname.startsWith('/api/');
+  const isNextData = url.pathname.startsWith('/_next/data');
+  const acceptsJson = request.headers.get('accept')?.includes('application/json');
+  const isGET = request.method === 'GET';
+
+  if (isApi || isNextData || acceptsJson) {
+    event.respondWith(
+      fetch(request).catch(() => caches.match(request))
+    );
+    return;
+  }
+
+  // Cache-first pour assets statiques et navigations GET uniquement
+  if (!isGET) {
+    return; // ne pas interférer avec les autres méthodes
+  }
+
   event.respondWith(
-    caches.match(event.request)
-      .then((response) => {
-        // Retourne le cache si disponible
-        if (response) {
-          return response;
+    caches.match(request).then((cached) => {
+      if (cached) return cached;
+      return fetch(request).then((networkResponse) => {
+        // Mettre en cache uniquement les réponses basiques 200
+        if (networkResponse && networkResponse.status === 200 && networkResponse.type === 'basic') {
+          const responseToCache = networkResponse.clone();
+          caches.open(CACHE_NAME).then((cache) => {
+            cache.put(request, responseToCache);
+          });
         }
-
-        // Sinon, faire la requête réseau
-        return fetch(event.request).then((response) => {
-          // Vérifier si la réponse est valide
-          if (!response || response.status !== 200 || response.type !== 'basic') {
-            return response;
-          }
-
-          // Cloner la réponse car elle ne peut être consommée qu'une fois
-          const responseToCache = response.clone();
-
-          caches.open(CACHE_NAME)
-            .then((cache) => {
-              cache.put(event.request, responseToCache);
-            });
-
-          return response;
-        }).catch(() => {
-          // En cas d'erreur réseau, retourner une page offline si disponible
-          if (event.request.destination === 'document') {
-            return caches.match('/offline.html');
-          }
-        });
-      })
+        return networkResponse;
+      }).catch(() => {
+        if (request.destination === 'document') {
+          return caches.match('/offline.html');
+        }
+      });
+    })
   );
 });
 

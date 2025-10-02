@@ -2,7 +2,6 @@
 'use client';
 
 import { useEffect, useState } from 'react';
-import { getAllSales } from '@/lib/actions/sales';
 import { Sale, User, Client, SaleItem, Medication } from '@prisma/client';
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table';
 import { formatCurrency } from '@/lib/utils';
@@ -12,8 +11,14 @@ export function SalesHistory() {
 
   useEffect(() => {
     const fetchSales = async () => {
-      const data = await getAllSales();
-      setSales(data as (Sale & { seller: User; client: Client; items: (SaleItem & { medication: Medication })[] })[]);
+      try {
+        const res = await fetch('/api/sales', { cache: 'no-store' });
+        if (!res.ok) throw new Error('HTTP ' + res.status);
+        const data = await res.json();
+        setSales(data as (Sale & { seller: User; client: Client; items: (SaleItem & { medication: Medication })[] })[]);
+      } catch (e) {
+        console.error('Failed to fetch sales history', e);
+      }
     };
     fetchSales();
   }, []);
@@ -33,7 +38,7 @@ export function SalesHistory() {
         {sales.map((sale) => (
           <TableRow key={sale.id}>
             <TableCell>{sale.client.name}</TableCell>
-            <TableCell>{sale.seller.username}</TableCell>
+            <TableCell>{sale.seller?.username ?? '—'}</TableCell>
             <TableCell>{formatCurrency(sale.totalAmount)}</TableCell>
             <TableCell>{new Date(sale.date).toLocaleString()}</TableCell>
             <TableCell>

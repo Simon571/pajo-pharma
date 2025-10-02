@@ -39,7 +39,22 @@ export function UsersTable() {
         toast.error('Le mot de passe est requis pour la création d&apos;un utilisateur.');
         return;
       }
-      await createUser({ username: data.username, password: data.password, role: 'seller' });
+      // Créer l'utilisateur avec les champs de base seulement
+      const newUser = await createUser({ 
+        username: data.username, 
+        password: data.password, 
+        role: 'seller'
+      } as any); // Utilisation temporaire de 'as any' pour contourner le problème de type
+      
+      // Mettre à jour avec les champs d'essai par défaut
+      if (newUser) {
+        await updateUser(newUser.id, {
+          trialStartDate: new Date(),
+          trialEndDate: new Date(Date.now() + 30 * 24 * 60 * 60 * 1000), // 30 jours
+          isTrialActive: true,
+          subscriptionType: 'trial'
+        } as any);
+      }
       toast.success('Vendeur ajouté avec succès!');
     }
     fetchUsers();

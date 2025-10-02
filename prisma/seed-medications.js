@@ -30,10 +30,13 @@ async function main() {
         await prisma.medication.create({
           data: {
             name: record['Nom du Médicament'],
+            pharmaceuticalForm: record['Forme'],
+            purchasePrice: parseFloat(record['Prix (CDF)']) * 0.8, // Assume purchase price is 80% of sale price
             price: parseFloat(record['Prix (CDF)']),
             quantity: parseInt(record['Stock Disponible']),
             expirationDate: expirationDate,
             barcode: uuidv4(), // Generate a unique barcode
+            isAvailableForSale: true, // Make medications available for sale by default
           },
         });
         console.log(`Added ${record['Nom du Médicament']}`);

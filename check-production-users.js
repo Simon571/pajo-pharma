@@ -11,24 +11,17 @@ async function checkUsers() {
   const prisma = new PrismaClient();
 
   try {
-    const users = await prisma.user.findMany();
+    const users = await prisma.user.findMany({
+      select: { id: true, username: true, role: true, passwordHash: true }
+    });
     console.log(`👥 ${users.length} utilisateurs trouvés:`);
-    
-    users.forEach(user => {
-      console.log(`  - ${user.email} (${user.role}) - Actif: ${user.isActive}`);
-      console.log(`    Mot de passe hashé: ${user.password.substring(0, 20)}...`);
-    });
 
-    // Test spécifique pour admin
-    const admin = await prisma.user.findUnique({
-      where: { email: 'admin@pajourani.com' }
+    users.forEach(user => {
+      console.log(`  - ${user.username} (${user.role})`);
+      if (user.passwordHash) {
+        console.log(`    Hash: ${user.passwordHash.substring(0, 20)}...`);
+      }
     });
-    
-    if (admin) {
-      console.log('✅ Admin trouvé');
-    } else {
-      console.log('❌ Admin non trouvé');
-    }
 
   } catch (error) {
     console.error('❌ Erreur:', error.message);

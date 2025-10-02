@@ -1,16 +1,20 @@
 import { withAuth } from 'next-auth/middleware';
 import { NextResponse } from 'next/server';
+import { trialMiddleware } from '@/lib/trial-middleware';
 
 export default withAuth(
-  function middleware(req) {
+  async function middleware(req) {
     const { token } = req.nextauth;
     const path = req.nextUrl.pathname;
 
-    // Allow access to specific login pages and ALL API routes
+    // Allow access to specific login pages, API routes, and trial-related pages
     if (path.startsWith('/login-admin') || 
         path.startsWith('/login-seller') || 
         path.startsWith('/login-common') ||
-        path.startsWith('/api/')) {
+        path.startsWith('/api/') ||
+        path.startsWith('/subscription-required') ||
+        path.startsWith('/trial-limited') ||
+        path.startsWith('/subscription')) {
       return NextResponse.next();
     }
 
@@ -38,6 +42,12 @@ export default withAuth(
       if (token.role !== 'seller') {
         return NextResponse.redirect(new URL('/login-seller', req.url)); // Redirect to seller login if not seller
       }
+    }
+
+    // Apply trial verification middleware for premium features
+    const trialResponse = await trialMiddleware(req);
+    if (trialResponse) {
+      return trialResponse; // Trial middleware handled the request (redirect or block)
     }
 
     return NextResponse.next();

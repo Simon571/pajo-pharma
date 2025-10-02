@@ -55,6 +55,9 @@ interface GlobalReportData {
   }>;
 }
 
+export const dynamic = 'force-dynamic';
+export const revalidate = 0;
+
 export async function GET(request: NextRequest) {
   const prisma = new PrismaClient();
 
@@ -226,13 +229,21 @@ export async function GET(request: NextRequest) {
       paymentMethodsBreakdown,
     };
 
-    return NextResponse.json(globalReportData);
+    return new NextResponse(JSON.stringify(globalReportData), {
+      headers: {
+        'Content-Type': 'application/json',
+        'Cache-Control': 'no-store, no-cache, must-revalidate, proxy-revalidate',
+        'Pragma': 'no-cache',
+        'Expires': '0',
+        'Surrogate-Control': 'no-store'
+      }
+    });
     
   } catch (error) {
     console.error('Erreur lors de la génération du rapport global:', error);
     return NextResponse.json(
       { error: 'Erreur lors de la génération du rapport global' },
-      { status: 500 }
+      { status: 500, headers: { 'Cache-Control': 'no-store' } }
     );
   } finally {
     await prisma.$disconnect();

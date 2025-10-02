@@ -9,6 +9,9 @@ interface SaleItemInput {
   priceAtSale: number;
 }
 
+export const dynamic = 'force-dynamic';
+export const revalidate = 0;
+
 export async function GET(req: NextRequest) {
   const session = await getServerSession(authOptions);
 
@@ -49,18 +52,28 @@ export async function GET(req: NextRequest) {
     const sales = await prisma.sale.findMany({
       where: whereClause,
       orderBy: { date: 'desc' },
-      include: { items: { include: { medication: true } }, client: true },
+      include: { seller: true, items: { include: { medication: true } }, client: true },
     });
     
     // Retourner dans le format attendu par la page daily-report
+    const headers = {
+      'Cache-Control': 'no-store, no-cache, must-revalidate, proxy-revalidate',
+      'Pragma': 'no-cache',
+      'Expires': '0',
+      'Surrogate-Control': 'no-store'
+    } as Record<string, string>;
+
     if (todayParam === 'true') {
-      return NextResponse.json({ sales }, { status: 200 });
+      return NextResponse.json({ sales }, { status: 200, headers });
     }
-    
-    return NextResponse.json(sales, { status: 200 });
+
+    return NextResponse.json(sales, { status: 200, headers });
   } catch (error: unknown) {
     console.error('Error fetching sales:', error);
-    return NextResponse.json({ message: 'Erreur lors de la récupération des ventes.' }, { status: 500 });
+    return NextResponse.json(
+      { message: 'Erreur lors de la récupération des ventes.' }, 
+      { status: 500, headers: { 'Cache-Control': 'no-store' } }
+    );
   }
 }
 
@@ -121,9 +134,12 @@ export async function POST(req: NextRequest) {
       });
     }
 
-    return NextResponse.json(newSale, { status: 201 });
+    return NextResponse.json(newSale, { status: 201, headers: { 'Cache-Control': 'no-store' } });
   } catch (error: unknown) {
     console.error('Error saving sale:', error);
-    return NextResponse.json({ message: 'Erreur lors de l\'enregistrement de la vente.' }, { status: 500 });
+    return NextResponse.json(
+      { message: 'Erreur lors de l\'enregistrement de la vente.' }, 
+      { status: 500, headers: { 'Cache-Control': 'no-store' } }
+    );
   }
 }

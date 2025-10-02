@@ -117,8 +117,6 @@ export default function VentesPage() {
       }
     });
     // Ne pas vider la recherche ni la liste après ajout au panier
-    // setSearchTerm('');
-    // setMedications([]);
   }, [setCart]);
 
   const updateCartQuantity = (medicationId: string, delta: number) => {
@@ -169,6 +167,9 @@ export default function VentesPage() {
         body: JSON.stringify({
           clientName: clientName || 'Client Anonyme',
           totalAmount,
+          amountPaid: totalAmount,
+          changeDue: 0,
+          paymentMethod: 'Espèces',
           items: cart.map((item) => ({
             medicationId: item.medication.id,
             quantity: item.quantity,
@@ -181,9 +182,21 @@ export default function VentesPage() {
         toast.success('Vente enregistrée avec succès!');
         setCart([]);
         setClientName('');
+        // Forcer la mise à jour des données sur les pages pertinentes
+        try {
+          // Notifier les pages côté client en rafraîchissant leurs données
+          await Promise.allSettled([
+            fetch('/api/daily-report', { cache: 'no-store' }),
+            fetch('/api/sales?today=true', { cache: 'no-store' })
+          ]);
+        } catch (_) {}
       } else {
-        const data = await res.json();
-        toast.error(`Erreur lors de l\'enregistrement de la vente: ${data.message || 'Une erreur est survenue.'}`);
+        let msg = `HTTP ${res.status}`;
+        try {
+          const data = await res.json();
+          msg = data.message || data.error || msg;
+        } catch {}
+        toast.error(`Erreur lors de l'enregistrement de la vente: ${msg}`);
       }
     } catch (error) {
       console.error('Failed to save sale:', error);

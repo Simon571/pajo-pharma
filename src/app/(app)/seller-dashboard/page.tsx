@@ -34,7 +34,7 @@ export default function SellerDashboardPage() {
   const fetchDailySummary = async () => {
     setIsLoading(true);
     try {
-      const response = await fetch('/api/daily-report');
+  const response = await fetch('/api/daily-report', { cache: 'no-store' });
       if (response.ok) {
         const data: ReportData = await response.json();
         setDailySummary({

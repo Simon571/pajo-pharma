@@ -2,7 +2,6 @@
 'use client';
 
 import { useEffect, useState } from 'react';
-import { getDailySales } from '@/lib/actions/sales';
 import { Sale, Client, SaleItem, Medication } from '@prisma/client';
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table';
 
@@ -16,8 +15,14 @@ export function DailySalesHistory() {
 
   useEffect(() => {
     const fetchSales = async () => {
-      const data = await getDailySales();
-      setSales(data as SaleWithDetails[]);
+      try {
+        const res = await fetch('/api/sales?today=true', { cache: 'no-store' });
+        if (!res.ok) throw new Error('HTTP ' + res.status);
+        const data = await res.json();
+        setSales((data?.sales || []) as SaleWithDetails[]);
+      } catch (e) {
+        console.error('Failed to fetch daily sales', e);
+      }
     };
     fetchSales();
   }, []);

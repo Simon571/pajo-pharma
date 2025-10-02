@@ -69,21 +69,21 @@ export default function DailyReportPage() {
       setLoading(true);
       
       // Récupérer les données de ventes
-      const salesResponse = await fetch('/api/daily-report');
+  const salesResponse = await fetch('/api/daily-report', { cache: 'no-store' });
       if (salesResponse.ok) {
         const salesData = await salesResponse.json();
         setReportData(salesData);
       }
       
       // Récupérer les détails des ventes d'aujourd'hui
-      const salesDetailsResponse = await fetch('/api/sales?today=true');
+  const salesDetailsResponse = await fetch('/api/sales?today=true', { cache: 'no-store' });
       if (salesDetailsResponse.ok) {
         const salesDetailsData = await salesDetailsResponse.json();
         setTodaySalesDetails(salesDetailsData.sales || []);
       }
 
       // Récupérer les dépenses
-      const expensesResponse = await fetch('/api/seller-expenses');
+  const expensesResponse = await fetch('/api/seller-expenses', { cache: 'no-store' });
       if (expensesResponse.ok) {
         const expensesData = await expensesResponse.json();
         setExpenseData(expensesData);

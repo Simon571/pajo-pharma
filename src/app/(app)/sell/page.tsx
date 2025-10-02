@@ -99,8 +99,7 @@ export default function SellPage() {
         }
       }
     });
-    setSearchTerm(''); // Clear search after adding to cart
-    setMedications([]); // Clear search results
+    // Ne pas vider la recherche ni la liste; garder visible pour ajouter plusieurs produits
   }, [setCart, setSearchTerm, setMedications]);
 
   const updateCartQuantity = (medicationId: string, delta: number) => {
@@ -151,6 +150,9 @@ export default function SellPage() {
         body: JSON.stringify({
           clientName: clientName || 'Client Anonyme',
           totalAmount,
+          amountPaid: totalAmount,
+          changeDue: 0,
+          paymentMethod: 'Espèces',
           items: cart.map((item) => ({
             medicationId: item.medication.id,
             quantity: item.quantity,
@@ -163,9 +165,19 @@ export default function SellPage() {
         toast.success('Vente enregistrée avec succès!');
         setCart([]);
         setClientName('');
+        try {
+          await Promise.allSettled([
+            fetch('/api/daily-report', { cache: 'no-store' }),
+            fetch('/api/sales?today=true', { cache: 'no-store' })
+          ]);
+        } catch (_) {}
       } else {
-        const data = await res.json();
-        toast.error(`Erreur lors de l\'enregistrement de la vente: ${data.message || 'Une erreur est survenue.'}`);
+        let msg = `HTTP ${res.status}`;
+        try {
+          const data = await res.json();
+          msg = data.message || data.error || msg;
+        } catch {}
+        toast.error(`Erreur lors de l'enregistrement de la vente: ${msg}`);
       }
     } catch (error) {
       console.error('Failed to save sale:', error);

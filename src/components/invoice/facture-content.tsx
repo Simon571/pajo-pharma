@@ -73,6 +73,12 @@ export default function FactureContent() {
       toast.success("Vente enregistrée avec succès et facture générée!");
       clearCart();
       window.print();
+      try {
+        await Promise.allSettled([
+          fetch('/api/daily-report', { cache: 'no-store' }),
+          fetch('/api/sales?today=true', { cache: 'no-store' })
+        ]);
+      } catch (_) {}
       setTimeout(() => {
         router.push("/seller-dashboard");
       }, 500);
