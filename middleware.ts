@@ -54,7 +54,21 @@ export default withAuth(
   },
   {
     callbacks: {
-      authorized: ({ token }) => !!token,
+      authorized: ({ token, req }) => {
+        const path = req.nextUrl.pathname;
+        
+        // Allow access to login pages and API routes
+        if (path.startsWith('/login-admin') || 
+            path.startsWith('/login-seller') || 
+            path.startsWith('/login-common') ||
+            path.startsWith('/api/') ||
+            path === '/') {
+          return true;
+        }
+        
+        // For other routes, require authentication
+        return !!token;
+      },
     },
   }
 );
@@ -67,7 +81,8 @@ export const config = {
      * - _next/static (static files)
      * - _next/image (image optimization files)
      * - favicon.ico (favicon file)
+     * - login pages
      */
-    '/((?!api|_next/static|_next/image|favicon.ico).*)',
+    '/((?!api|_next/static|_next/image|favicon.ico|login-admin|login-seller|login-common).*)',
   ],
 };
