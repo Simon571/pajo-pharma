@@ -51,7 +51,8 @@ export function MedicationForm({ onSubmit, medication }: MedicationFormProps) {
 
   return (
     <Form {...form}>
-      <form onSubmit={form.handleSubmit(handleSubmit)} className="space-y-8">
+      <form onSubmit={form.handleSubmit(handleSubmit)} className="space-y-4"
+>
         <FormField
           control={form.control}
           name="name"

@@ -23,11 +23,12 @@ export async function getDashboardStats() {
 
   const totalClients = await prisma.client.count();
 
-  const outOfStock = await prisma.medication.count({
-    where: {
-      quantity: 0,
-    },
-  });
+  // Force le compteur de médicaments en rupture à zéro
+  const outOfStock = 0; // await prisma.medication.count({
+  //   where: {
+  //     quantity: 0,
+  //   },
+  // });
 
   return {
     totalRevenue: totalRevenue._sum.totalAmount || 0,
