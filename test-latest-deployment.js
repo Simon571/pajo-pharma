@@ -1,7 +1,7 @@
 // Test de la dernière version déployée
 const https = require('https');
 
-const BASE_URL = 'https://pajo-pharma-advdgeciw-nzamba-simons-projects.vercel.app';
+const BASE_URL = 'https://pajo-pharma-p3ro6wom3-nzamba-simons-projects.vercel.app';
 
 async function testDeployment() {
   console.log('🚀 Test de la dernière version déployée');

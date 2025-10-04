@@ -7,14 +7,15 @@ export default withAuth(
     const { token } = req.nextauth;
     const path = req.nextUrl.pathname;
 
-    // Allow access to specific login pages, API routes, and trial-related pages
+    // Always allow access to public routes
     if (path.startsWith('/login-admin') || 
         path.startsWith('/login-seller') || 
         path.startsWith('/login-common') ||
         path.startsWith('/api/') ||
         path.startsWith('/subscription-required') ||
         path.startsWith('/trial-limited') ||
-        path.startsWith('/subscription')) {
+        path.startsWith('/subscription') ||
+        path === '/') {
       return NextResponse.next();
     }
 
@@ -57,16 +58,19 @@ export default withAuth(
       authorized: ({ token, req }) => {
         const path = req.nextUrl.pathname;
         
-        // Allow access to login pages and API routes
+        // Always allow public routes
         if (path.startsWith('/login-admin') || 
             path.startsWith('/login-seller') || 
             path.startsWith('/login-common') ||
             path.startsWith('/api/') ||
-            path === '/') {
+            path === '/' ||
+            path.startsWith('/subscription-required') ||
+            path.startsWith('/trial-limited') ||
+            path.startsWith('/subscription')) {
           return true;
         }
         
-        // For other routes, require authentication
+        // For protected routes, require authentication
         return !!token;
       },
     },
