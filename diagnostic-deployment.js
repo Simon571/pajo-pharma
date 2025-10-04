@@ -1,7 +1,7 @@
 // Test de diagnostic complet du déploiement
 const https = require('https');
 
-const BASE_URL = 'https://pajo-pharma-p3ro6wom3-nzamba-simons-projects.vercel.app';
+const BASE_URL = 'https://pajo-pharma-agczkxjuw-nzamba-simons-projects.vercel.app';
 
 async function diagnosticTest() {
   console.log('🔍 Diagnostic complet du déploiement');
