@@ -111,7 +111,7 @@ export function MedicationsList() {
                 purchasePrice: Number(purchasePrice),
                 price: Number(price),
                 quantity: Number(quantity),
-                expirationDate: new Date(expirationDate).toISOString(),
+                expirationDate: new Date(expirationDate),
                 barcode: '', // Optionnel
                 isAvailableForSale: false,
               };
