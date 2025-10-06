@@ -1,9 +1,9 @@
 'use client';
 
-import { useState } from 'react';
+import { useState, useEffect, useRef } from 'react';
 import Link from 'next/link';
 import { usePathname } from 'next/navigation';
-import { Menu, X, ShoppingCart, BarChart3, Home, Settings, LogOut, Users, Package, Warehouse, ArrowUpDown, Tag, Receipt } from 'lucide-react';
+import { Menu, X, ShoppingCart, BarChart3, Home, Settings, LogOut, Users, Package, Warehouse, ArrowUpDown, Tag, Receipt, ChevronUp, ChevronDown } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Dialog, DialogContent, DialogTrigger } from '@/components/ui/dialog';
 
@@ -13,6 +13,8 @@ interface MobileNavigationProps {
 
 export function MobileNavigation({ userRole = 'seller' }: MobileNavigationProps) {
   const [isOpen, setIsOpen] = useState(false);
+  const [showScrollIndicator, setShowScrollIndicator] = useState(true);
+  const navRef = useRef<HTMLElement>(null);
   const pathname = usePathname();
 
   const sellerLinks = [
@@ -97,6 +99,43 @@ export function MobileNavigation({ userRole = 'seller' }: MobileNavigationProps)
     return pathname === href || pathname.startsWith(href + '/');
   };
 
+  // Fonction pour gérer le défilement et afficher/masquer l'indicateur
+  const handleScroll = () => {
+    if (navRef.current) {
+      const { scrollTop, scrollHeight, clientHeight } = navRef.current;
+      const scrollPercent = scrollTop / (scrollHeight - clientHeight);
+      const isNearBottom = scrollPercent > 0.85; // Considérer proche du bas à 85%
+      setShowScrollIndicator(!isNearBottom && scrollHeight > clientHeight);
+    }
+  };
+
+  // Fonction pour défiler vers le haut ou le bas
+  const scrollToPosition = (position: 'top' | 'bottom') => {
+    if (navRef.current) {
+      const { scrollHeight, clientHeight } = navRef.current;
+      const targetPosition = position === 'top' ? 0 : scrollHeight - clientHeight;
+      
+      navRef.current.scrollTo({
+        top: targetPosition,
+        behavior: 'smooth'
+      });
+    }
+  };
+
+  // Effet pour ajouter l'écouteur de défilement
+  useEffect(() => {
+    const navElement = navRef.current;
+    if (navElement) {
+      navElement.addEventListener('scroll', handleScroll);
+      // Vérifier initialement s'il y a du contenu défilable
+      handleScroll();
+      
+      return () => {
+        navElement.removeEventListener('scroll', handleScroll);
+      };
+    }
+  }, [isOpen, userRole]);
+
   return (
     <div className="lg:hidden">
       <Dialog open={isOpen} onOpenChange={setIsOpen}>
@@ -104,7 +143,7 @@ export function MobileNavigation({ userRole = 'seller' }: MobileNavigationProps)
           <Button
             variant="outline"
             size="icon"
-            className="fixed top-4 left-4 z-50 bg-white shadow-lg"
+            className="fixed top-4 left-4 z-50 bg-white shadow-lg cursor-pointer"
           >
             <Menu className="h-5 w-5" />
           </Button>
@@ -119,7 +158,7 @@ export function MobileNavigation({ userRole = 'seller' }: MobileNavigationProps)
                   variant="ghost"
                   size="icon"
                   onClick={() => setIsOpen(false)}
-                  className="text-white hover:bg-blue-700"
+                  className="text-white hover:bg-blue-700 cursor-pointer"
                 >
                   <X className="h-5 w-5" />
                 </Button>
@@ -129,11 +168,24 @@ export function MobileNavigation({ userRole = 'seller' }: MobileNavigationProps)
               </p>
             </div>
 
-            {/* Navigation Links - Scrollable */}
-            <nav className="flex-1 overflow-y-auto">
-              <div className="p-4">
+            {/* Navigation Links - Scrollable avec curseur visible */}
+            <nav ref={navRef} className="flex-1 overflow-y-auto mobile-nav-scroll relative">
+              {/* Indicateur de défilement en haut */}
+              {userRole === 'admin' && (
+                <div className="text-xs text-center py-3 text-blue-600 scroll-indicator scroll-indicator-top">
+                  <div className="flex items-center justify-center gap-2">
+                    <span>📋</span>
+                    <span className="font-semibold">Modules Administration</span>
+                    <span>📋</span>
+                  </div>
+                  <div className="text-[10px] mt-1 opacity-75">
+                    {links.length} modules disponibles
+                  </div>
+                </div>
+              )}
+              <div className="p-4 pb-6">
                 <ul className="space-y-3">
-                  {links.map((link) => {
+                  {links.map((link, index) => {
                     const Icon = link.icon;
                     const active = isActive(link.href);
                     
@@ -143,21 +195,65 @@ export function MobileNavigation({ userRole = 'seller' }: MobileNavigationProps)
                           href={link.href}
                           onClick={() => setIsOpen(false)}
                           className={`
-                            flex items-center gap-3 px-4 py-4 rounded-lg transition-all duration-200 text-base font-medium
+                            flex items-center gap-3 px-4 py-4 rounded-lg transition-all duration-200 text-base font-medium cursor-pointer
+                            hover:scale-[1.02] active:scale-[0.98] transform
                             ${active 
-                              ? 'bg-blue-100 text-blue-700 border-l-4 border-blue-600' 
-                              : 'text-gray-700 hover:bg-gray-100 hover:text-gray-900'
+                              ? 'bg-blue-100 text-blue-700 border-l-4 border-blue-600 shadow-sm' 
+                              : 'text-gray-700 hover:bg-gray-100 hover:text-gray-900 hover:shadow-sm'
                             }
                           `}
+                          style={{
+                            animationDelay: `${index * 50}ms`,
+                            animation: isOpen ? 'slideInFromLeft 0.3s ease-out forwards' : 'none'
+                          }}
                         >
                           <Icon className={`h-6 w-6 ${active ? 'text-blue-600' : 'text-gray-500'}`} />
-                          {link.label}
+                          <span className="flex-1">{link.label}</span>
+                          {active && (
+                            <div className="w-2 h-2 bg-blue-600 rounded-full"></div>
+                          )}
                         </Link>
                       </li>
                     );
                   })}
                 </ul>
               </div>
+              
+              {/* Indicateur de plus de contenu en bas */}
+              {userRole === 'admin' && showScrollIndicator && (
+                <div className="text-xs text-center py-3 text-blue-600 scroll-indicator scroll-indicator-bottom">
+                  <div className="flex items-center justify-center gap-2">
+                    <span>⬇️</span>
+                    <span className="font-semibold">Plus de modules en bas</span>
+                    <span>⬇️</span>
+                  </div>
+                  <div className="text-[10px] mt-1 opacity-75">
+                    Continuez à faire défiler
+                  </div>
+                </div>
+              )}
+
+              {/* Boutons de navigation rapide (seulement pour admin avec beaucoup de modules) */}
+              {userRole === 'admin' && links.length > 6 && (
+                <div className="fixed right-2 top-1/2 transform -translate-y-1/2 flex flex-col gap-2 z-20">
+                  <Button
+                    variant="outline"
+                    size="icon"
+                    className="w-8 h-8 bg-white/90 hover:bg-white shadow-lg border-blue-200"
+                    onClick={() => scrollToPosition('top')}
+                  >
+                    <ChevronUp className="h-4 w-4 text-blue-600" />
+                  </Button>
+                  <Button
+                    variant="outline"
+                    size="icon"
+                    className="w-8 h-8 bg-white/90 hover:bg-white shadow-lg border-blue-200"
+                    onClick={() => scrollToPosition('bottom')}
+                  >
+                    <ChevronDown className="h-4 w-4 text-blue-600" />
+                  </Button>
+                </div>
+              )}
             </nav>
 
             {/* Quick Actions for Seller */}
@@ -168,7 +264,7 @@ export function MobileNavigation({ userRole = 'seller' }: MobileNavigationProps)
                   <Link
                     href="/ventes"
                     onClick={() => setIsOpen(false)}
-                    className="flex items-center justify-center gap-2 bg-blue-600 text-white py-3 px-4 rounded-lg font-medium hover:bg-blue-700 transition-colors"
+                    className="flex items-center justify-center gap-2 bg-blue-600 text-white py-3 px-4 rounded-lg font-medium hover:bg-blue-700 transition-colors cursor-pointer"
                   >
                     <ShoppingCart className="h-5 w-5" />
                     Nouvelle Vente
@@ -183,7 +279,7 @@ export function MobileNavigation({ userRole = 'seller' }: MobileNavigationProps)
                 <Link
                   href="/login-common"
                   onClick={() => setIsOpen(false)}
-                  className="flex items-center justify-center gap-2 bg-red-600 text-white py-3 px-4 rounded-lg font-medium hover:bg-red-700 transition-colors"
+                  className="flex items-center justify-center gap-2 bg-red-600 text-white py-3 px-4 rounded-lg font-medium hover:bg-red-700 transition-colors cursor-pointer"
                 >
                   <LogOut className="h-5 w-5" />
                   Déconnexion

@@ -392,3 +392,117 @@
     letter-spacing: 0.01em;
   }
 }
+
+/* Scrollbar personnalisée pour navigation mobile */
+.mobile-nav-scroll {
+  /* Pour navigateurs WebKit (Chrome, Safari, Edge) */
+  scrollbar-width: auto;
+  scrollbar-color: #3b82f6 #e5e7eb;
+  /* Défilement fluide */
+  scroll-behavior: smooth;
+  /* Optimisation tactile */
+  -webkit-overflow-scrolling: touch;
+  /* Amélioration pour mobile */
+  overscroll-behavior-y: contain;
+}
+
+.mobile-nav-scroll::-webkit-scrollbar {
+  width: 12px; /* Plus large pour faciliter l'interaction tactile */
+}
+
+.mobile-nav-scroll::-webkit-scrollbar-track {
+  background: #e5e7eb;
+  border-radius: 6px;
+  /* Bordure pour plus de visibilité */
+  border: 1px solid #d1d5db;
+}
+
+.mobile-nav-scroll::-webkit-scrollbar-thumb {
+  background: linear-gradient(180deg, #3b82f6 0%, #2563eb 100%);
+  border-radius: 6px;
+  border: 2px solid #e5e7eb;
+  /* Effet au survol/touche */
+  transition: all 0.2s ease;
+}
+
+.mobile-nav-scroll::-webkit-scrollbar-thumb:hover,
+.mobile-nav-scroll::-webkit-scrollbar-thumb:active {
+  background: linear-gradient(180deg, #2563eb 0%, #1d4ed8 100%);
+  border-color: #d1d5db;
+}
+
+/* Indicateur de défilement animé */
+.scroll-indicator {
+  animation: pulse 2s infinite;
+  font-weight: 600;
+  /* Amélioration pour mobile */
+  user-select: none;
+  -webkit-user-select: none;
+  pointer-events: none;
+}
+
+@keyframes pulse {
+  0%, 100% {
+    opacity: 1;
+    transform: translateY(0);
+  }
+  50% {
+    opacity: 0.7;
+    transform: translateY(-2px);
+  }
+}
+
+/* Styles spécifiques pour l'indicateur de scroll mobile */
+.scroll-indicator-top {
+  background: linear-gradient(180deg, rgba(59, 130, 246, 0.1) 0%, rgba(59, 130, 246, 0.05) 100%);
+  border-bottom: 1px solid rgba(59, 130, 246, 0.2);
+  backdrop-filter: blur(8px);
+  position: sticky;
+  top: 0;
+  z-index: 10;
+}
+
+.scroll-indicator-bottom {
+  background: linear-gradient(0deg, rgba(59, 130, 246, 0.1) 0%, rgba(59, 130, 246, 0.05) 100%);
+  border-top: 1px solid rgba(59, 130, 246, 0.2);
+  backdrop-filter: blur(8px);
+  position: sticky;
+  bottom: 0;
+  z-index: 10;
+}
+
+/* Animation d'entrée pour les éléments de navigation */
+@keyframes slideInFromLeft {
+  from {
+    opacity: 0;
+    transform: translateX(-20px);
+  }
+  to {
+    opacity: 1;
+    transform: translateX(0);
+  }
+}
+
+/* Amélioration du scroll mobile avec momentum */
+@media (max-width: 768px) {
+  .mobile-nav-scroll {
+    /* Scroll momentum sur iOS */
+    -webkit-overflow-scrolling: touch;
+    /* Prévention du scroll horizontal */
+    overflow-x: hidden;
+    /* Amélioration des performances */
+    will-change: scroll-position;
+  }
+  
+  /* Zone tactile élargie pour la scrollbar sur mobile */
+  .mobile-nav-scroll::-webkit-scrollbar {
+    width: 16px; /* Plus large sur mobile pour faciliter l'interaction */
+  }
+  
+  .mobile-nav-scroll::-webkit-scrollbar-thumb {
+    background: linear-gradient(180deg, #3b82f6 0%, #2563eb 100%);
+    border: 3px solid #e5e7eb;
+    border-radius: 8px;
+    min-height: 40px; /* Hauteur minimale pour faciliter l'interaction */
+  }
+}
