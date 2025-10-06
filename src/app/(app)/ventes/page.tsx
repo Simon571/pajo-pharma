@@ -271,7 +271,7 @@ export default function VentesPage() {
               <CardTitle className="flex flex-col sm:flex-row sm:items-center justify-between gap-2">
                 <span className="text-lg">Recherche de Médicaments</span>
                 <div className="flex flex-col sm:flex-row gap-2">
-                  <Button onClick={openScanner} size="sm" variant="outline" className="h-8 sm:h-9">
+                  <Button onClick={openScanner} size="sm" variant="outline" className="h-8 sm:h-9 cursor-pointer">
                     <Scan className="h-4 w-4 mr-1" />
                     Scanner
                   </Button>
@@ -279,7 +279,7 @@ export default function VentesPage() {
                     onClick={() => setShowOutOfStock(!showOutOfStock)}
                     size="sm"
                     variant={showOutOfStock ? "default" : "outline"}
-                    className="h-8 sm:h-9"
+                    className="h-8 sm:h-9 cursor-pointer"
                   >
                     {showOutOfStock ? 'Masquer' : 'Afficher'} ruptures
                   </Button>
@@ -350,7 +350,7 @@ export default function VentesPage() {
                               onClick={() => addToCart(medication)}
                               disabled={medication.quantity <= 0}
                               size="sm"
-                              className="text-xs px-2 py-1"
+                              className="text-xs px-2 py-1 cursor-pointer disabled:cursor-not-allowed"
                             >
                               <PlusCircle className="h-3 w-3 mr-1" />
                               +
@@ -377,7 +377,7 @@ export default function VentesPage() {
                   Panier ({cart.length})
                 </span>
                 {cart.length > 0 && (
-                  <Button onClick={clearCart} variant="outline" size="sm" className="h-8 text-xs">
+                  <Button onClick={clearCart} variant="outline" size="sm" className="h-8 text-xs cursor-pointer">
                     <Trash2 className="h-3 w-3 mr-1" />
                     Vider
                   </Button>
@@ -405,7 +405,7 @@ export default function VentesPage() {
                             onClick={() => removeFromCart(item.medication.id)}
                             variant="ghost"
                             size="sm"
-                            className="h-6 w-6 p-0 ml-1"
+                            className="h-6 w-6 p-0 ml-1 cursor-pointer"
                           >
                             <Trash2 className="h-3 w-3" />
                           </Button>
@@ -416,7 +416,7 @@ export default function VentesPage() {
                               onClick={() => updateCartQuantity(item.medication.id, item.quantity - 1)}
                               variant="outline"
                               size="sm"
-                              className="h-6 w-6 p-0"
+                              className="h-6 w-6 p-0 cursor-pointer"
                             >
                               <MinusCircle className="h-3 w-3" />
                             </Button>
@@ -427,7 +427,7 @@ export default function VentesPage() {
                               onClick={() => updateCartQuantity(item.medication.id, item.quantity + 1)}
                               variant="outline"
                               size="sm"
-                              className="h-6 w-6 p-0"
+                              className="h-6 w-6 p-0 cursor-pointer disabled:cursor-not-allowed"
                               disabled={item.quantity >= item.medication.quantity}
                             >
                               <PlusCircle className="h-3 w-3" />
@@ -460,11 +460,11 @@ export default function VentesPage() {
                     </div>
 
                     <div className="space-y-2">
-                      <Button onClick={completeSale} className="w-full text-sm">
+                      <Button onClick={completeSale} className="w-full text-sm cursor-pointer">
                         <ShoppingCart className="h-4 w-4 mr-2" />
                         Finaliser la vente
                       </Button>
-                      <Button onClick={handlePrint} variant="outline" className="w-full text-sm">
+                      <Button onClick={handlePrint} variant="outline" className="w-full text-sm cursor-pointer">
                         <Printer className="h-4 w-4 mr-2" />
                         Imprimer facture
                       </Button>
