@@ -7,10 +7,13 @@ import { RevenueBySeller } from '@/components/admin/revenue-by-seller';
 import { ReorderSuggestions } from '@/components/admin/reorder-suggestions';
 import { StaleMedicationsAlert } from '@/components/admin/stale-medications-alert';
 import { ExpirationCalendar } from '@/components/admin/expiration-calendar';
+import MobileNavigation from '@/components/ui/mobile-navigation';
 
 export default function AdminDashboardPage() {
   return (
-    <div className="flex flex-col gap-4 p-4">
+    <div className="relative">
+      <MobileNavigation userRole="admin" />
+      <div className="flex flex-col gap-4 p-4">
       <h1 className="text-2xl font-bold">Tableau de Bord Administrateur</h1>
       <a href="/api/sales/export" download="sales_report.csv">
         <button className="bg-blue-500 hover:bg-blue-700 text-white font-bold py-2 px-4 rounded">
@@ -47,6 +50,7 @@ export default function AdminDashboardPage() {
         <Suspense fallback={<p>Chargement du calendrier des expirations...</p>}>
           <ExpirationCalendar />
         </Suspense>
+      </div>
       </div>
     </div>
   );

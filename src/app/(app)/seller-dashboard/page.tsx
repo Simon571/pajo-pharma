@@ -8,6 +8,7 @@ import { Button } from '@/components/ui/button';
 import { formatCurrency } from '@/lib/utils';
 import { ShoppingCart, BarChart3, DollarSign, Receipt, RefreshCw } from 'lucide-react';
 import Link from 'next/link';
+import MobileNavigation from '@/components/ui/mobile-navigation';
 
 interface DailySummary {
   totalSales: number;
@@ -75,7 +76,9 @@ export default function SellerDashboardPage() {
   });
 
   return (
-    <div className="p-3 sm:p-4 lg:p-6 space-y-4 sm:space-y-6">
+    <div className="relative">
+      <MobileNavigation userRole="seller" />
+      <div className="p-3 sm:p-4 lg:p-6 space-y-4 sm:space-y-6">
       {/* En-tête de bienvenue */}
       <div className="flex flex-col sm:flex-row justify-between items-start gap-4">
         <div className="space-y-2">
@@ -168,6 +171,7 @@ export default function SellerDashboardPage() {
             </CardContent>
           </Card>
         </div>
+      </div>
       </div>
     </div>
   );

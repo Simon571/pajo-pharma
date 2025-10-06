@@ -3,7 +3,7 @@
 import { useState } from 'react';
 import Link from 'next/link';
 import { usePathname } from 'next/navigation';
-import { Menu, X, ShoppingCart, BarChart3, Home, Settings } from 'lucide-react';
+import { Menu, X, ShoppingCart, BarChart3, Home, Settings, LogOut, Users, Package } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Dialog, DialogContent, DialogTrigger } from '@/components/ui/dialog';
 
@@ -42,12 +42,22 @@ export function MobileNavigation({ userRole = 'seller' }: MobileNavigationProps)
     {
       href: '/medications',
       label: 'Médicaments',
-      icon: Settings,
+      icon: Package,
+    },
+    {
+      href: '/ventes',
+      label: 'Interface Vente',
+      icon: ShoppingCart,
+    },
+    {
+      href: '/users',
+      label: 'Utilisateurs',
+      icon: Users,
     },
     {
       href: '/admin/historique-ventes',
-      label: 'Ventes',
-      icon: ShoppingCart,
+      label: 'Historique Ventes',
+      icon: BarChart3,
     },
     {
       href: '/admin/global-report',
@@ -139,6 +149,23 @@ export function MobileNavigation({ userRole = 'seller' }: MobileNavigationProps)
                 </div>
               </div>
             )}
+
+            {/* Section Déconnexion */}
+            <div className="p-4 border-t bg-gray-50 mt-auto">
+              <div className="space-y-2">
+                <Link
+                  href="/login-common"
+                  onClick={() => setIsOpen(false)}
+                  className="flex items-center justify-center gap-2 bg-red-600 text-white py-3 px-4 rounded-lg font-medium hover:bg-red-700 transition-colors"
+                >
+                  <LogOut className="h-5 w-5" />
+                  Déconnexion
+                </Link>
+                <p className="text-xs text-center text-gray-500">
+                  Retour à la page de connexion
+                </p>
+              </div>
+            </div>
           </div>
         </DialogContent>
       </Dialog>
