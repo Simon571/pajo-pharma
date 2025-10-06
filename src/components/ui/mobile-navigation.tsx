@@ -3,7 +3,7 @@
 import { useState } from 'react';
 import Link from 'next/link';
 import { usePathname } from 'next/navigation';
-import { Menu, X, ShoppingCart, BarChart3, Home, Settings, LogOut, Users, Package } from 'lucide-react';
+import { Menu, X, ShoppingCart, BarChart3, Home, Settings, LogOut, Users, Package, Warehouse, ArrowUpDown, Tag, Receipt } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Dialog, DialogContent, DialogTrigger } from '@/components/ui/dialog';
 
@@ -36,8 +36,13 @@ export function MobileNavigation({ userRole = 'seller' }: MobileNavigationProps)
   const adminLinks = [
     {
       href: '/admin-dashboard',
-      label: 'Dashboard',
+      label: 'Dashboard Admin',
       icon: Home,
+    },
+    {
+      href: '/sell',
+      label: 'Vente Rapide',
+      icon: ShoppingCart,
     },
     {
       href: '/medications',
@@ -45,14 +50,29 @@ export function MobileNavigation({ userRole = 'seller' }: MobileNavigationProps)
       icon: Package,
     },
     {
-      href: '/ventes',
-      label: 'Interface Vente',
-      icon: ShoppingCart,
+      href: '/admin/inventory',
+      label: 'Inventaire',
+      icon: Warehouse,
     },
     {
-      href: '/users',
-      label: 'Utilisateurs',
-      icon: Users,
+      href: '/admin/global-report',
+      label: 'Rapport Journalier Global',
+      icon: BarChart3,
+    },
+    {
+      href: '/admin/stock',
+      label: 'Stock',
+      icon: Warehouse,
+    },
+    {
+      href: '/stock-movements',
+      label: 'Mouvement de Stock',
+      icon: ArrowUpDown,
+    },
+    {
+      href: '/admin/produits-disponibles',
+      label: 'Produits Disponibles',
+      icon: Tag,
     },
     {
       href: '/admin/historique-ventes',
@@ -60,9 +80,14 @@ export function MobileNavigation({ userRole = 'seller' }: MobileNavigationProps)
       icon: BarChart3,
     },
     {
-      href: '/admin/global-report',
-      label: 'Rapports',
-      icon: BarChart3,
+      href: '/users',
+      label: 'Utilisateurs',
+      icon: Users,
+    },
+    {
+      href: '/expenses',
+      label: 'Gestion des Dépenses',
+      icon: Receipt,
     },
   ];
 
