@@ -313,106 +313,58 @@ export default function VentesPage() {
             </CardContent>
           </Card>
 
-          {/* Liste Mobile Compacte */}
-          <div className="block lg:hidden">
-            <Card>
-              <CardHeader className="pb-2">
-                <CardTitle className="text-lg">
-                  Médicaments ({filteredAndSortedMedications.length})
-                </CardTitle>
-              </CardHeader>
-              <CardContent className="p-0">
-                {filteredAndSortedMedications.length === 0 ? (
-                  <div className="p-4 text-center text-gray-500">
-                    {isLoading ? 'Chargement...' : 'Aucun médicament trouvé'}
-                  </div>
-                ) : (
-                  <div className="max-h-96 overflow-y-auto">
-                    {filteredAndSortedMedications.map((medication, index) => (
-                      <div 
-                        key={medication.id} 
-                        className={`flex items-center justify-between p-3 border-b border-gray-100 hover:bg-gray-50 transition-colors ${
-                          index === filteredAndSortedMedications.length - 1 ? 'border-b-0' : ''
-                        }`}
-                      >
-                        <div className="flex-1 min-w-0 mr-3">
-                          <h3 className="font-medium text-sm leading-tight truncate text-gray-900">
-                            {medication.name}
-                          </h3>
-                          <div className="flex items-center gap-3 mt-1">
-                            <span className="text-xs text-gray-500">
-                              Stock: <span className={medication.quantity <= 5 ? 'text-red-600 font-medium' : 'text-green-600'}>{medication.quantity}</span>
-                            </span>
-                            <span className="text-sm font-semibold text-blue-600">
-                              {formatCurrency(medication.price)}
-                            </span>
-                          </div>
-                        </div>
-                        <Button
-                          onClick={() => addToCart(medication)}
-                          disabled={medication.quantity <= 0}
-                          size="sm"
-                          className="h-8 px-3 text-xs shrink-0"
-                        >
-                          <PlusCircle className="h-3 w-3 mr-1" />
-                          +
-                        </Button>
-                      </div>
-                    ))}
-                  </div>
-                )}
-              </CardContent>
-            </Card>
-          </div>
-
-          {/* Table Desktop */}
-          <Card className="hidden lg:block">
+          {/* Table Responsive pour tous les écrans */}
+          <Card>
             <CardContent className="p-0">
-              <Table>
-                <TableHeader>
-                  <TableRow>
-                    <TableHead>Nom</TableHead>
-                    <TableHead>Prix</TableHead>
-                    <TableHead>Stock</TableHead>
-                    <TableHead>Action</TableHead>
-                  </TableRow>
-                </TableHeader>
-                <TableBody>
-                  {filteredAndSortedMedications.length === 0 ? (
+              <div className="overflow-x-auto">
+                <Table>
+                  <TableHeader>
                     <TableRow>
-                      <TableCell colSpan={4} className="text-center py-8 text-gray-500">
-                        {isLoading ? 'Chargement...' : 'Aucun médicament trouvé'}
-                      </TableCell>
+                      <TableHead className="text-sm">Nom</TableHead>
+                      <TableHead className="text-sm">Prix</TableHead>
+                      <TableHead className="text-sm">Stock</TableHead>
+                      <TableHead className="text-sm">Action</TableHead>
                     </TableRow>
-                  ) : (
-                    filteredAndSortedMedications.map((medication) => (
-                      <TableRow key={medication.id}>
-                        <TableCell className="font-medium">{medication.name}</TableCell>
-                        <TableCell className="text-green-600 font-semibold">
-                          {formatCurrency(medication.price)}
-                        </TableCell>
-                        <TableCell>
-                          <span className={medication.quantity <= 0 ? 'text-red-600' : 'text-green-600'}>
-                            {medication.quantity}
-                          </span>
-                        </TableCell>
-                        <TableCell>
-                          <Button
-                            onClick={() => addToCart(medication)}
-                            disabled={medication.quantity <= 0}
-                            size="sm"
-                          >
-                            <PlusCircle className="h-4 w-4 mr-1" />
-                            Ajouter
-                          </Button>
+                  </TableHeader>
+                  <TableBody>
+                    {filteredAndSortedMedications.length === 0 ? (
+                      <TableRow>
+                        <TableCell colSpan={4} className="text-center py-8 text-gray-500">
+                          {isLoading ? 'Chargement...' : 'Aucun médicament trouvé'}
                         </TableCell>
                       </TableRow>
-                    ))
-                  )}
-                </TableBody>
-              </Table>
+                    ) : (
+                      filteredAndSortedMedications.map((medication) => (
+                        <TableRow key={medication.id} className="hover:bg-gray-50">
+                          <TableCell className="font-medium text-sm">{medication.name}</TableCell>
+                          <TableCell className="text-green-600 font-semibold text-sm">
+                            {formatCurrency(medication.price)}
+                          </TableCell>
+                          <TableCell className="text-sm">
+                            <span className={medication.quantity <= 0 ? 'text-red-600' : 'text-green-600'}>
+                              {medication.quantity}
+                            </span>
+                          </TableCell>
+                          <TableCell>
+                            <Button
+                              onClick={() => addToCart(medication)}
+                              disabled={medication.quantity <= 0}
+                              size="sm"
+                              className="text-xs px-2 py-1"
+                            >
+                              <PlusCircle className="h-3 w-3 mr-1" />
+                              +
+                            </Button>
+                          </TableCell>
+                        </TableRow>
+                      ))
+                    )}
+                  </TableBody>
+                </Table>
+              </div>
             </CardContent>
           </Card>
+
         </div>
 
         {/* Panier */}
@@ -524,7 +476,6 @@ export default function VentesPage() {
           </Card>
         </div>
       </div>
-      </div>
 
       <Dialog open={isScannerOpen} onOpenChange={setIsScannerOpen}>
         <DialogContent className="sm:max-w-md">
@@ -537,6 +488,7 @@ export default function VentesPage() {
 
       <div style={{ display: 'none' }}>
         <PrintableContent ref={printRef} cart={cart} totalAmount={totalAmount} clientName={clientName} />
+      </div>
       </div>
     </div>
   );
