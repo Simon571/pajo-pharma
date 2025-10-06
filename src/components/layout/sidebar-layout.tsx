@@ -34,7 +34,7 @@ export default function SidebarLayout({ children }: SidebarLayoutProps) {
   return (
     <div className="flex min-h-screen bg-gray-100">
       <aside className={cn(
-        "fixed top-0 left-0 h-screen bg-gradient-to-br from-blue-500 via-blue-600 to-blue-700 shadow-lg p-4 transition-all duration-300 ease-in-out overflow-y-auto z-10",
+        "fixed top-0 left-0 h-screen bg-gradient-to-br from-blue-500 via-blue-600 to-blue-700 shadow-lg p-4 transition-all duration-300 ease-in-out overflow-y-auto z-10 hidden lg:block",
         isSidebarOpen ? "w-64" : "w-0 overflow-hidden"
       )}>
         <div className="text-2xl font-bold mb-6 text-white">PAJO PHARMA</div>
@@ -224,9 +224,9 @@ export default function SidebarLayout({ children }: SidebarLayoutProps) {
       </aside>
       <main className={cn(
         "flex-1 transition-all duration-300 ease-in-out min-h-screen",
-        isSidebarOpen ? "ml-64" : "ml-0"
+        isSidebarOpen ? "lg:ml-64" : "ml-0"
       )}>
-        <div className="p-8">
+        <div className="p-2 sm:p-4 lg:p-8">
           {children}
         </div>
       </main>
