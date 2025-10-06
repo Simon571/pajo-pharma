@@ -257,7 +257,7 @@ export default function VentesPage() {
   return (
     <div className="relative">
       <MobileNavigation userRole="seller" />
-      <div className="container mx-auto p-2 sm:p-4 lg:p-6 pl-16 sm:pl-4 lg:pl-6">
+      <div className="container mx-auto p-2 sm:p-4 lg:p-6 lg:pl-6">
         <div className="mb-4 sm:mb-6">
           <h1 className="text-xl sm:text-2xl lg:text-3xl font-bold text-gray-900">Interface de Vente</h1>
           <p className="text-gray-600 mt-1 sm:mt-2 text-sm sm:text-base">Recherchez et vendez des médicaments</p>

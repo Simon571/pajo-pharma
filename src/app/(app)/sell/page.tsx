@@ -212,7 +212,7 @@ export default function SellPage() {
   return (
     <div className="relative">
       <MobileNavigation userRole="seller" />
-      <div className="p-2 sm:p-4 lg:p-8 pl-16 sm:pl-4 lg:pl-8">
+      <div className="p-2 sm:p-4 lg:p-8 lg:pl-8">
         <h1 className="text-xl sm:text-2xl lg:text-3xl font-bold mb-4 sm:mb-6 lg:mb-8">Vente Rapide</h1>
 
       <div className="grid grid-cols-1 lg:grid-cols-4 gap-4 sm:gap-6 lg:gap-8">
