@@ -6,7 +6,7 @@ import { Button } from '@/components/ui/button';
 import { Table, TableHeader, TableRow, TableHead, TableBody, TableCell } from '@/components/ui/table';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { toast } from 'sonner';
-import { PlusCircle, MinusCircle, Trash2, Printer, Scan, Loader2 } from 'lucide-react';
+import { PlusCircle, MinusCircle, Trash2, Printer, Scan, Loader2, ShoppingCart } from 'lucide-react';
 import { useDebounce } from '@/hooks/use-debounce';
 import { fetchMedications } from '@/lib/api-utils';
 import { useReactToPrint } from 'react-to-print';
@@ -16,6 +16,7 @@ import { Dialog, DialogContent, DialogHeader, DialogTitle } from '@/components/u
 import BarcodeScanner from '@/components/scanner/barcode-scanner';
 import { Label } from '@/components/ui/label';
 import PrintableContent from '@/components/invoice/PrintableContent';
+import MobileNavigation from '@/components/ui/mobile-navigation';
 
 interface Medication {
   id: string;
@@ -52,174 +53,166 @@ export default function VentesPage() {
     }
   }, [searchTerm, debouncedSearchTerm]);
 
-  useEffect(() => {
-    const fetchMedicationsData = async () => {
-      try {
-        setIsLoading(true);
-        
-        const params = {
-          inStock: true,
-          ...(debouncedSearchTerm.length > 0 && { search: debouncedSearchTerm })
-        };
-        
-        const data = await fetchMedications(params);
-        
-        // Si on fait une recherche mais qu'on ne trouve rien, charger tous les médicaments
-        // et laisser le filtrage côté client s'en occuper
-        if (debouncedSearchTerm.length > 0 && data.length === 0) {
-          console.log('Recherche API vide, chargement de tous les médicaments pour filtrage côté client');
-          const allData = await fetchMedications({ inStock: true });
-          // S'assurer qu'on ne duplique pas - utiliser un Set pour éliminer les doublons par ID
-          const uniqueMedications = Array.from(
-            new Map(allData.map(med => [med.id, med])).values()
-          );
-          setMedications(uniqueMedications);
-        } else {
-          // Éliminer les doublons potentiels même pour les résultats normaux
-          const uniqueData = Array.from(
-            new Map(data.map(med => [med.id, med])).values()
-          );
-          setMedications(uniqueData);
-        }
-        
-      } catch (error) {
-        console.error('Failed to fetch medications:', error);
+  const loadMedications = useCallback(async (searchQuery: string = '') => {
+    setIsLoading(true);
+    try {
+      const data = await fetchMedications({ search: searchQuery.trim() });
+      if (Array.isArray(data)) {
+        setMedications(data);
+      } else {
+        console.error('Invalid data format received:', data);
         setMedications([]);
-        toast.error('Erreur lors de la recherche des médicaments.');
-      } finally {
-        setIsLoading(false);
       }
-    };
+    } catch (error) {
+      console.error('Error loading medications:', error);
+      toast.error('Erreur lors du chargement des médicaments');
+      setMedications([]);
+    } finally {
+      setIsLoading(false);
+    }
+  }, []);
 
-    // Toujours charger les médicaments (avec ou sans recherche)
-    fetchMedicationsData();
-  }, [debouncedSearchTerm]);
+  useEffect(() => {
+    loadMedications(debouncedSearchTerm);
+  }, [debouncedSearchTerm, loadMedications]);
 
   const addToCart = useCallback((medication: Medication) => {
-    setCart((prevCart) => {
-      const existingItem = prevCart.find((item) => item.medication.id === medication.id);
+    if (medication.quantity <= 0) {
+      toast.error('Ce médicament est en rupture de stock');
+      return;
+    }
+
+    setCart(prevCart => {
+      const existingItem = prevCart.find(item => item.medication.id === medication.id);
       if (existingItem) {
-        if (existingItem.quantity < medication.quantity) {
-          return prevCart.map((item) =>
-            item.medication.id === medication.id ? { ...item, quantity: item.quantity + 1 } : item
-          );
-        } else {
-          toast.warning(`Stock insuffisant pour ${medication.name}.`);
+        if (existingItem.quantity >= medication.quantity) {
+          toast.error('Stock insuffisant');
           return prevCart;
         }
+        const updatedCart = prevCart.map(item =>
+          item.medication.id === medication.id
+            ? { ...item, quantity: item.quantity + 1 }
+            : item
+        );
+        toast.success(`${medication.name} ajouté au panier`);
+        return updatedCart;
       } else {
-        if (medication.quantity > 0) {
-          return [...prevCart, { medication, quantity: 1 }];
-        } else {
-          toast.warning(`${medication.name} est en rupture de stock.`);
-          return prevCart;
-        }
+        toast.success(`${medication.name} ajouté au panier`);
+        return [...prevCart, { medication, quantity: 1 }];
       }
     });
-    // Ne pas vider la recherche ni la liste après ajout au panier
-  }, [setCart]);
+  }, []);
 
-  const updateCartQuantity = (medicationId: string, delta: number) => {
-    setCart((prevCart) => {
-      const updatedCart = prevCart.map((item) => {
+  const updateCartQuantity = useCallback((medicationId: string, newQuantity: number) => {
+    setCart(prevCart => {
+      if (newQuantity <= 0) {
+        return prevCart.filter(item => item.medication.id !== medicationId);
+      }
+      
+      return prevCart.map(item => {
         if (item.medication.id === medicationId) {
-          const newQuantity = item.quantity + delta;
-          if (newQuantity > 0 && newQuantity <= item.medication.quantity) {
-            return { ...item, quantity: newQuantity };
-          } else if (newQuantity <= 0) {
-            return null;
-          } else {
-            toast.warning(`Stock insuffisant pour ${item.medication.name}.`);
+          if (newQuantity > item.medication.quantity) {
+            toast.error('Stock insuffisant');
+            return item;
           }
+          return { ...item, quantity: newQuantity };
         }
         return item;
-      }).filter(Boolean) as CartItem[];
-      return updatedCart;
+      });
     });
-  };
+  }, []);
 
-  const removeFromCart = (medicationId: string) => {
-    setCart((prevCart) => prevCart.filter((item) => item.medication.id !== medicationId));
-  };
+  const removeFromCart = useCallback((medicationId: string) => {
+    setCart(prevCart => prevCart.filter(item => item.medication.id !== medicationId));
+    toast.success('Article retiré du panier');
+  }, []);
 
-  const totalAmount = cart.reduce((sum, item) => sum + item.medication.price * item.quantity, 0);
+  const clearCart = useCallback(() => {
+    setCart([]);
+    toast.success('Panier vidé');
+  }, []);
+
+  const totalAmount = cart.reduce((total, item) => total + (item.medication.price * item.quantity), 0);
 
   const handlePrint = useReactToPrint({
     contentRef: printRef,
-    documentTitle: `Facture_${Date.now()}`,
-    onAfterPrint: () => {
-      saveSale();
-    },
+    documentTitle: `Facture-${new Date().toISOString().split('T')[0]}`,
   });
 
-  const saveSale = async () => {
+  const completeSale = useCallback(async () => {
     if (cart.length === 0) {
-      toast.error('Le panier est vide. Impossible d\'enregistrer la vente.');
+      toast.error('Le panier est vide');
       return;
     }
 
     try {
-      const res = await fetch('/api/sales', {
+      const saleData = {
+        clientName: clientName || 'Client',
+        items: cart.map(item => ({
+          medicationId: item.medication.id,
+          quantity: item.quantity,
+          unitPrice: item.medication.price
+        })),
+        totalAmount
+      };
+
+      const response = await fetch('/api/sales', {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
         },
-        body: JSON.stringify({
-          clientName: clientName || 'Client Anonyme',
-          totalAmount,
-          amountPaid: totalAmount,
-          changeDue: 0,
-          paymentMethod: 'Espèces',
-          items: cart.map((item) => ({
-            medicationId: item.medication.id,
-            quantity: item.quantity,
-            priceAtSale: item.medication.price,
-          })),
-        }),
+        body: JSON.stringify(saleData),
       });
 
-      if (res.ok) {
-        toast.success('Vente enregistrée avec succès!');
-        setCart([]);
-        setClientName('');
-        // Forcer la mise à jour des données sur les pages pertinentes
-        try {
-          // Notifier les pages côté client en rafraîchissant leurs données
-          await Promise.allSettled([
-            fetch('/api/daily-report', { cache: 'no-store' }),
-            fetch('/api/sales?today=true', { cache: 'no-store' })
-          ]);
-        } catch (_) {}
-      } else {
-        let msg = `HTTP ${res.status}`;
-        try {
-          const data = await res.json();
-          msg = data.message || data.error || msg;
-        } catch {}
-        toast.error(`Erreur lors de l'enregistrement de la vente: ${msg}`);
+      if (!response.ok) {
+        throw new Error('Erreur lors de la vente');
       }
+
+      toast.success('Vente effectuée avec succès !');
+      setCart([]);
+      setClientName('');
+      
+      // Recharger les médicaments pour mettre à jour les stocks
+      await loadMedications(debouncedSearchTerm);
+      
+      // Imprimer automatiquement
+      setTimeout(() => {
+        handlePrint();
+      }, 500);
     } catch (error) {
-      console.error('Failed to save sale:', error);
-      toast.error('Erreur réseau lors de l\'enregistrement de la vente.');
+      console.error('Error completing sale:', error);
+      toast.error('Erreur lors de la vente');
     }
-  };
+  }, [cart, clientName, totalAmount, loadMedications, debouncedSearchTerm, handlePrint]);
+
+  const openScanner = useCallback(() => {
+    setIsScannerOpen(true);
+  }, []);
+
+  const closeScanner = useCallback(() => {
+    setIsScannerOpen(false);
+  }, []);
 
   const onScanSuccess = useCallback(async (decodedText: string) => {
-    setIsScannerOpen(false);
     try {
-      const res = await fetch(`/api/medications?search=${decodedText}`);
-      const data = await res.json();
-      if (data && data.length > 0) {
-        addToCart(data[0]);
-        toast.success(`Médicament ${data[0].name} ajouté au panier.`);
+      const response = await fetch(`/api/medications/barcode/${decodedText}`);
+      if (response.ok) {
+        const medication = await response.json();
+        if (medication) {
+          addToCart(medication);
+          closeScanner();
+          toast.success(`Médicament trouvé: ${medication.name}`);
+        } else {
+          toast.error('Aucun médicament trouvé avec ce code-barres');
+        }
       } else {
-        toast.error('Médicament non trouvé avec ce code-barres.');
+        toast.error('Erreur lors de la recherche du médicament');
       }
     } catch (error) {
       console.error('Error fetching medication by barcode:', error);
       toast.error('Erreur lors de la recherche du médicament par code-barres.');
     }
-  }, [addToCart]);
+  }, [addToCart, closeScanner]);
 
   const onScanError = useCallback(() => {
     // console.warn(`Code Scan Error = ${_errorMessage}`);
@@ -262,267 +255,269 @@ export default function VentesPage() {
     });
 
   return (
-    <div className="container mx-auto p-6">
-      <div className="mb-6">
-        <h1 className="text-3xl font-bold text-gray-900">Interface de Vente</h1>
-        <p className="text-gray-600 mt-2">Recherchez et vendez des médicaments</p>
-      </div>
+    <div className="relative">
+      <MobileNavigation userRole="seller" />
+      <div className="container mx-auto p-2 sm:p-4 lg:p-6 pl-16 sm:pl-4 lg:pl-6">
+        <div className="mb-4 sm:mb-6">
+          <h1 className="text-xl sm:text-2xl lg:text-3xl font-bold text-gray-900">Interface de Vente</h1>
+          <p className="text-gray-600 mt-1 sm:mt-2 text-sm sm:text-base">Recherchez et vendez des médicaments</p>
+        </div>
 
-      <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
+      <div className="grid grid-cols-1 lg:grid-cols-3 gap-3 lg:gap-6">
         {/* Section de recherche et liste des médicaments */}
-        <div className="lg:col-span-2 space-y-4">
+        <div className="lg:col-span-2 space-y-3 lg:space-y-4">
           <Card>
-            <CardHeader>
-              <CardTitle className="flex items-center justify-between">
-                Recherche de Médicaments
-                <Button
-                  variant="outline"
-                  size="sm"
-                  onClick={() => setIsScannerOpen(true)}
-                  className="flex items-center gap-2"
-                >
-                  <Scan className="h-4 w-4" />
-                  Scanner
-                </Button>
+            <CardHeader className="pb-3">
+              <CardTitle className="flex flex-col sm:flex-row sm:items-center justify-between gap-2">
+                <span className="text-lg">Recherche de Médicaments</span>
+                <div className="flex flex-col sm:flex-row gap-2">
+                  <Button onClick={openScanner} size="sm" variant="outline" className="h-8 sm:h-9">
+                    <Scan className="h-4 w-4 mr-1" />
+                    Scanner
+                  </Button>
+                  <Button
+                    onClick={() => setShowOutOfStock(!showOutOfStock)}
+                    size="sm"
+                    variant={showOutOfStock ? "default" : "outline"}
+                    className="h-8 sm:h-9"
+                  >
+                    {showOutOfStock ? 'Masquer' : 'Afficher'} ruptures
+                  </Button>
+                </div>
               </CardTitle>
             </CardHeader>
-            <CardContent>
-              <div className="flex gap-2 mb-4">
-                <Input
-                  placeholder="Rechercher un médicament..."
-                  value={searchTerm}
-                  onChange={(e) => setSearchTerm(e.target.value)}
-                  className="flex-1"
-                />
-                <Button
-                  variant="outline"
-                  onClick={() => {
-                    setSearchTerm('');
-                    setMedications([]);
-                  }}
+            <CardContent className="space-y-3">
+              <div className="flex flex-col sm:flex-row gap-2">
+                <div className="relative flex-1">
+                  <Input
+                    type="text"
+                    placeholder="Rechercher par nom ou code-barres..."
+                    value={searchTerm}
+                    onChange={(e) => setSearchTerm(e.target.value)}
+                    className="w-full text-sm sm:text-base"
+                  />
+                  {(isLoading || isTyping) && (
+                    <Loader2 className="absolute right-3 top-2.5 h-4 w-4 animate-spin text-gray-400" />
+                  )}
+                </div>
+                <select
+                  value={sortBy}
+                  onChange={(e) => setSortBy(e.target.value as 'name' | 'price' | 'stock')}
+                  className="px-3 py-2 border border-gray-300 rounded-md text-sm sm:text-base min-w-[120px]"
                 >
-                  Effacer
-                </Button>
+                  <option value="name">Nom</option>
+                  <option value="price">Prix</option>
+                  <option value="stock">Stock</option>
+                </select>
               </div>
+            </CardContent>
+          </Card>
 
-              {isLoading && (
-                <div className="flex items-center justify-center py-8">
-                  <Loader2 className="h-6 w-6 animate-spin mr-2" />
-                  <span className="text-gray-600">Recherche...</span>
-                </div>
-              )}
+          {/* Liste Mobile */}
+          <div className="block lg:hidden space-y-2">
+            {filteredAndSortedMedications.length === 0 ? (
+              <Card>
+                <CardContent className="p-4 text-center text-gray-500">
+                  {isLoading ? 'Chargement...' : 'Aucun médicament trouvé'}
+                </CardContent>
+              </Card>
+            ) : (
+              filteredAndSortedMedications.map((medication) => (
+                <Card key={medication.id} className="overflow-hidden">
+                  <CardContent className="p-3">
+                    <div className="flex justify-between items-start mb-2">
+                      <div className="flex-1 min-w-0">
+                        <h3 className="font-medium text-sm leading-tight truncate">{medication.name}</h3>
+                        <p className="text-xs text-gray-500 mt-0.5">
+                          Stock: {medication.quantity} • {formatCurrency(medication.price)}
+                        </p>
+                      </div>
+                    </div>
+                    <div className="flex justify-between items-center">
+                      <div className="text-right">
+                        <p className="font-semibold text-green-600 text-sm">{formatCurrency(medication.price)}</p>
+                      </div>
+                      <Button
+                        onClick={() => addToCart(medication)}
+                        disabled={medication.quantity <= 0}
+                        size="sm"
+                        className="h-8 px-3 text-xs"
+                      >
+                        <PlusCircle className="h-3 w-3 mr-1" />
+                        Ajouter
+                      </Button>
+                    </div>
+                  </CardContent>
+                </Card>
+              ))
+            )}
+          </div>
 
-              {!isLoading && medications.length > 0 && (
-                <div className="border rounded-lg">
-                  <Table>
-                    <TableHeader>
-                      <TableRow>
-                        <TableHead>Nom</TableHead>
-                        <TableHead>Prix</TableHead>
-                        <TableHead>Stock</TableHead>
-                        <TableHead>Action</TableHead>
+          {/* Table Desktop */}
+          <Card className="hidden lg:block">
+            <CardContent className="p-0">
+              <Table>
+                <TableHeader>
+                  <TableRow>
+                    <TableHead>Nom</TableHead>
+                    <TableHead>Prix</TableHead>
+                    <TableHead>Stock</TableHead>
+                    <TableHead>Action</TableHead>
+                  </TableRow>
+                </TableHeader>
+                <TableBody>
+                  {filteredAndSortedMedications.length === 0 ? (
+                    <TableRow>
+                      <TableCell colSpan={4} className="text-center py-8 text-gray-500">
+                        {isLoading ? 'Chargement...' : 'Aucun médicament trouvé'}
+                      </TableCell>
+                    </TableRow>
+                  ) : (
+                    filteredAndSortedMedications.map((medication) => (
+                      <TableRow key={medication.id}>
+                        <TableCell className="font-medium">{medication.name}</TableCell>
+                        <TableCell className="text-green-600 font-semibold">
+                          {formatCurrency(medication.price)}
+                        </TableCell>
+                        <TableCell>
+                          <span className={medication.quantity <= 0 ? 'text-red-600' : 'text-green-600'}>
+                            {medication.quantity}
+                          </span>
+                        </TableCell>
+                        <TableCell>
+                          <Button
+                            onClick={() => addToCart(medication)}
+                            disabled={medication.quantity <= 0}
+                            size="sm"
+                          >
+                            <PlusCircle className="h-4 w-4 mr-1" />
+                            Ajouter
+                          </Button>
+                        </TableCell>
                       </TableRow>
-                    </TableHeader>
-                    <TableBody>
-                      {filteredAndSortedMedications.map((medication) => (
-                        <TableRow key={medication.id}>
-                          <TableCell className="font-medium">{medication.name}</TableCell>
-                          <TableCell>{formatCurrency(medication.price)}</TableCell>
-                          <TableCell>
-                            <span className={`px-2 py-1 rounded text-sm ${
-                              medication.quantity > 10 ? 'bg-green-100 text-green-800' :
-                              medication.quantity > 0 ? 'bg-yellow-100 text-yellow-800' :
-                              'bg-red-100 text-red-800'
-                            }`}>
-                              {medication.quantity}
-                            </span>
-                          </TableCell>
-                          <TableCell>
-                            <Button
-                              size="sm"
-                              onClick={() => addToCart(medication)}
-                              disabled={medication.quantity <= 0}
-                              className="w-full"
-                            >
-                              <PlusCircle className="h-4 w-4 mr-1" />
-                              Ajouter
-                            </Button>
-                          </TableCell>
-                        </TableRow>
-                      ))}
-                    </TableBody>
-                  </Table>
-                </div>
-              )}
-
-              {!isLoading && !isTyping && searchTerm && medications.length === 0 && (
-                <div className="text-center py-8 text-gray-500">
-                  Aucun médicament trouvé pour "{searchTerm}"
-                </div>
-              )}
+                    ))
+                  )}
+                </TableBody>
+              </Table>
             </CardContent>
           </Card>
         </div>
 
-        {/* Panier et finalisation */}
-        <div className="lg:col-span-1">
+        {/* Panier */}
+        <div className="space-y-3 lg:space-y-4">
           <Card>
-            <CardHeader>
-              <CardTitle>Panier ({cart.length})</CardTitle>
+            <CardHeader className="pb-3">
+              <CardTitle className="flex items-center justify-between text-lg">
+                <span className="flex items-center">
+                  <ShoppingCart className="h-5 w-5 mr-2" />
+                  Panier ({cart.length})
+                </span>
+                {cart.length > 0 && (
+                  <Button onClick={clearCart} variant="outline" size="sm" className="h-8 text-xs">
+                    <Trash2 className="h-3 w-3 mr-1" />
+                    Vider
+                  </Button>
+                )}
+              </CardTitle>
             </CardHeader>
-            <CardContent>
+            <CardContent className="space-y-3">
               {cart.length === 0 ? (
-                <p className="text-gray-500 text-center py-8">Panier vide</p>
+                <p className="text-gray-500 text-center py-4 text-sm">Le panier est vide</p>
               ) : (
-                <Table>
-                  <TableHeader>
-                    <TableRow>
-                      <TableHead className="text-xs">Médicament</TableHead>
-                      <TableHead className="text-xs text-center">Qté</TableHead>
-                      <TableHead className="text-xs text-right">Total</TableHead>
-                      <TableHead className="w-8"></TableHead>
-                    </TableRow>
-                  </TableHeader>
-                  <TableBody>
+                <>
+                  <div className="space-y-2 max-h-48 sm:max-h-60 lg:max-h-96 overflow-y-auto">
                     {cart.map((item) => (
-                      <TableRow key={item.medication.id}>
-                        <TableCell className="text-sm font-medium">
-                          {item.medication.name}
-                          <div className="text-xs text-gray-500">
-                            {formatCurrency(item.medication.price)} × {item.quantity}
+                      <div key={item.medication.id} className="border rounded-lg p-2 bg-gray-50">
+                        <div className="flex justify-between items-start mb-2">
+                          <div className="flex-1 min-w-0">
+                            <h4 className="font-medium text-xs sm:text-sm leading-tight truncate">
+                              {item.medication.name}
+                            </h4>
+                            <p className="text-xs text-gray-500">
+                              {formatCurrency(item.medication.price)} x {item.quantity}
+                            </p>
                           </div>
-                        </TableCell>
-                        <TableCell className="text-center">
-                          <div className="flex items-center justify-center gap-1">
+                          <Button
+                            onClick={() => removeFromCart(item.medication.id)}
+                            variant="ghost"
+                            size="sm"
+                            className="h-6 w-6 p-0 ml-1"
+                          >
+                            <Trash2 className="h-3 w-3" />
+                          </Button>
+                        </div>
+                        <div className="flex items-center justify-between">
+                          <div className="flex items-center space-x-1">
                             <Button
-                              size="sm"
+                              onClick={() => updateCartQuantity(item.medication.id, item.quantity - 1)}
                               variant="outline"
-                              onClick={() => updateCartQuantity(item.medication.id, -1)}
+                              size="sm"
                               className="h-6 w-6 p-0"
                             >
                               <MinusCircle className="h-3 w-3" />
                             </Button>
-                            <span className="text-sm w-8 text-center">{item.quantity}</span>
+                            <span className="font-medium text-sm min-w-[2rem] text-center">
+                              {item.quantity}
+                            </span>
                             <Button
-                              size="sm"
+                              onClick={() => updateCartQuantity(item.medication.id, item.quantity + 1)}
                               variant="outline"
-                              onClick={() => updateCartQuantity(item.medication.id, 1)}
-                              disabled={item.quantity >= item.medication.quantity}
+                              size="sm"
                               className="h-6 w-6 p-0"
+                              disabled={item.quantity >= item.medication.quantity}
                             >
                               <PlusCircle className="h-3 w-3" />
                             </Button>
                           </div>
-                        </TableCell>
-                        <TableCell className="text-right text-sm font-medium">
-                          {formatCurrency(item.medication.price * item.quantity)}
-                        </TableCell>
-                        <TableCell>
-                          <Button
-                            size="sm"
-                            variant="destructive"
-                            onClick={() => removeFromCart(item.medication.id)}
-                            className="h-6 w-6 p-0"
-                          >
-                            <Trash2 className="h-3 w-3" />
-                          </Button>
-                        </TableCell>
-                      </TableRow>
+                          <span className="font-semibold text-green-600 text-sm">
+                            {formatCurrency(item.medication.price * item.quantity)}
+                          </span>
+                        </div>
+                      </div>
                     ))}
-                  </TableBody>
-                </Table>
+                  </div>
+
+                  <div className="border-t pt-3 space-y-3">
+                    <div className="flex justify-between text-lg font-bold">
+                      <span>Total:</span>
+                      <span className="text-green-600">{formatCurrency(totalAmount)}</span>
+                    </div>
+
+                    <div className="space-y-2">
+                      <Label htmlFor="clientName" className="text-sm">Nom du client (optionnel)</Label>
+                      <Input
+                        id="clientName"
+                        type="text"
+                        placeholder="Nom du client..."
+                        value={clientName}
+                        onChange={(e) => setClientName(e.target.value)}
+                        className="text-sm"
+                      />
+                    </div>
+
+                    <div className="space-y-2">
+                      <Button onClick={completeSale} className="w-full text-sm">
+                        <ShoppingCart className="h-4 w-4 mr-2" />
+                        Finaliser la vente
+                      </Button>
+                      <Button onClick={handlePrint} variant="outline" className="w-full text-sm">
+                        <Printer className="h-4 w-4 mr-2" />
+                        Imprimer facture
+                      </Button>
+                    </div>
+                  </div>
+                </>
               )}
-              <div className="flex justify-end items-center mt-4 text-xl font-bold">
-                Total: {formatCurrency(totalAmount)}
-              </div>
-            </CardContent>
-          </Card>
-
-          <Card className="mt-4">
-            <CardHeader>
-              <CardTitle>Finaliser la Vente</CardTitle>
-            </CardHeader>
-            <CardContent className="space-y-4">
-              <div className="bg-gray-50 p-4 rounded-lg">
-                <h3 className="font-semibold mb-2">Résumé</h3>
-                <div className="space-y-1 text-sm">
-                  <div className="flex justify-between">
-                    <span>Articles:</span>
-                    <span>{cart.reduce((sum, item) => sum + item.quantity, 0)}</span>
-                  </div>
-                  <div className="flex justify-between font-semibold text-lg border-t pt-1">
-                    <span>Total:</span>
-                    <span className="text-green-600">{formatCurrency(totalAmount)}</span>
-                  </div>
-                </div>
-              </div>
-
-              <div>
-                <Label htmlFor="client-name">Nom du client (facultatif)</Label>
-                <Input
-                  id="client-name"
-                  placeholder="Nom du client"
-                  value={clientName}
-                  onChange={(e) => setClientName(e.target.value)}
-                  className="mt-1"
-                />
-              </div>
-
-              <div className="space-y-2 pt-4">
-                <Button 
-                  onClick={handlePrint} 
-                  className="w-full bg-blue-600 hover:bg-blue-700"
-                  disabled={cart.length === 0}
-                >
-                  <Printer className="mr-2 h-4 w-4" /> 
-                  Générer & Imprimer Facture
-                </Button>
-                <Button 
-                  onClick={saveSale} 
-                  className="w-full" 
-                  variant="outline"
-                  disabled={cart.length === 0}
-                >
-                  Vente Rapide (Sans facture)
-                </Button>
-              </div>
-            </CardContent>
-          </Card>
-
-          <Card className="mt-4">
-            <CardHeader>
-              <CardTitle className="text-lg">Statistiques</CardTitle>
-            </CardHeader>
-            <CardContent>
-              <div className="space-y-2 text-sm">
-                <div className="flex justify-between">
-                  <span>Médicaments disponibles:</span>
-                  <span className="font-semibold text-green-600">
-                    {Array.isArray(medications) ? medications.filter(m => m.quantity > 0).length : 0}
-                  </span>
-                </div>
-                <div className="flex justify-between">
-                  <span>Stock faible:</span>
-                  <span className="font-semibold text-orange-600">
-                    {Array.isArray(medications) ? medications.filter(m => m.quantity > 0 && m.quantity <= 10).length : 0}
-                  </span>
-                </div>
-                <div className="flex justify-between">
-                  <span>Ruptures de stock:</span>
-                  <span className="font-semibold text-red-600">
-                    {Array.isArray(medications) ? medications.filter(m => m.quantity === 0).length : 0}
-                  </span>
-                </div>
-              </div>
             </CardContent>
           </Card>
         </div>
       </div>
+      </div>
 
       <Dialog open={isScannerOpen} onOpenChange={setIsScannerOpen}>
-        <DialogContent>
+        <DialogContent className="sm:max-w-md">
           <DialogHeader>
-            <DialogTitle>Scanner un Code-barres</DialogTitle>
+            <DialogTitle>Scanner un code-barres</DialogTitle>
           </DialogHeader>
           <BarcodeScanner onScanSuccess={onScanSuccess} onScanError={onScanError} />
         </DialogContent>

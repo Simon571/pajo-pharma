@@ -228,3 +228,167 @@
     page-break-before: always;
   }
 }
+
+/* =============================================== */
+/* OPTIMISATIONS MOBILES POUR PAJOPHARMA */
+/* =============================================== */
+
+/* Amélioration des zones tactiles */
+@media (max-width: 768px) {
+  /* Boutons plus gros sur mobile */
+  .btn-mobile {
+    min-height: 44px;
+    min-width: 44px;
+    padding: 12px 16px;
+    font-size: 16px;
+  }
+
+  /* Inputs plus larges et tactiles */
+  .input-mobile {
+    min-height: 44px;
+    font-size: 16px;
+    padding: 12px 16px;
+  }
+
+  /* Tables responsive avec scroll horizontal */
+  .table-mobile {
+    overflow-x: auto;
+    white-space: nowrap;
+  }
+
+  .table-mobile table {
+    min-width: 600px;
+  }
+
+  /* Cards plus compactes sur mobile */
+  .card-mobile {
+    margin-bottom: 12px;
+    box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
+  }
+
+  /* Navigation sticky pour les actions importantes */
+  .sticky-actions {
+    position: sticky;
+    bottom: 0;
+    background: white;
+    padding: 16px;
+    border-top: 1px solid #e5e7eb;
+    box-shadow: 0 -2px 8px rgba(0, 0, 0, 0.1);
+  }
+
+  /* Amélioration des grilles sur mobile */
+  .mobile-grid {
+    gap: 8px;
+  }
+
+  /* Text wrapping pour éviter les débordements */
+  .text-mobile {
+    word-wrap: break-word;
+    overflow-wrap: break-word;
+  }
+
+  /* Amélioration des modales sur mobile */
+  .modal-mobile {
+    margin: 0;
+    max-height: 90vh;
+    border-radius: 16px 16px 0 0;
+  }
+
+  /* Zoom optimal pour éviter les problèmes de viewport */
+  .no-zoom {
+    touch-action: manipulation;
+  }
+}
+
+/* Amélioration des interactions tactiles */
+@media (hover: none) and (pointer: coarse) {
+  /* Suppression des hover effects sur les appareils tactiles */
+  .hover-disabled:hover {
+    transform: none !important;
+    box-shadow: none !important;
+  }
+  
+  /* Focus visible pour l'accessibilité tactile */
+  button:focus,
+  input:focus,
+  select:focus {
+    outline: 2px solid #3b82f6;
+    outline-offset: 2px;
+  }
+}
+
+/* Optimisations pour les très petits écrans (< 375px) */
+@media (max-width: 374px) {
+  .container-mobile {
+    padding-left: 8px;
+    padding-right: 8px;
+  }
+
+  .text-xs-mobile {
+    font-size: 12px;
+  }
+
+  .text-sm-mobile {
+    font-size: 14px;
+  }
+}
+
+/* Amélioration de la visibilité des éléments interactifs */
+.touch-target {
+  min-height: 44px;
+  min-width: 44px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+/* Amélioration des listes sur mobile */
+.list-mobile {
+  padding: 0;
+  margin: 0;
+}
+
+.list-mobile li {
+  padding: 16px 12px;
+  border-bottom: 1px solid #f3f4f6;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+}
+
+/* Amélioration du scroll sur mobile */
+.scroll-mobile {
+  -webkit-overflow-scrolling: touch;
+}
+
+/* Messages d'état plus visibles sur mobile */
+.status-mobile {
+  padding: 12px 16px;
+  border-radius: 8px;
+  font-weight: 500;
+  text-align: center;
+}
+
+/* Amélioration des badges et indicateurs */
+.badge-mobile {
+  padding: 4px 8px;
+  border-radius: 12px;
+  font-size: 12px;
+  font-weight: 600;
+  white-space: nowrap;
+}
+
+/* Optimisation des images sur mobile */
+.img-mobile {
+  max-width: 100%;
+  height: auto;
+  object-fit: cover;
+}
+
+/* Amélioration de la lisibilité */
+@media (max-width: 768px) {
+  .readable-mobile {
+    line-height: 1.6;
+    letter-spacing: 0.01em;
+  }
+}
