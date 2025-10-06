@@ -109,10 +109,10 @@ export function MobileNavigation({ userRole = 'seller' }: MobileNavigationProps)
             <Menu className="h-5 w-5" />
           </Button>
         </DialogTrigger>
-        <DialogContent className="w-72 p-0 max-w-sm h-full fixed left-0 top-0 translate-x-0 translate-y-0 rounded-r-lg rounded-l-none">
+        <DialogContent className="w-72 p-0 max-w-sm h-full fixed left-0 top-0 translate-x-0 translate-y-0 rounded-r-lg rounded-l-none overflow-hidden">
           <div className="flex flex-col h-full">
             {/* Header */}
-            <div className="p-6 border-b bg-blue-600 text-white">
+            <div className="p-6 border-b bg-blue-600 text-white shrink-0">
               <div className="flex items-center justify-between">
                 <h2 className="text-xl font-bold">PajoPharma</h2>
                 <Button
@@ -129,38 +129,40 @@ export function MobileNavigation({ userRole = 'seller' }: MobileNavigationProps)
               </p>
             </div>
 
-            {/* Navigation Links */}
-            <nav className="flex-1 p-4">
-              <ul className="space-y-3">
-                {links.map((link) => {
-                  const Icon = link.icon;
-                  const active = isActive(link.href);
-                  
-                  return (
-                    <li key={link.href}>
-                      <Link
-                        href={link.href}
-                        onClick={() => setIsOpen(false)}
-                        className={`
-                          flex items-center gap-3 px-4 py-4 rounded-lg transition-all duration-200 text-base font-medium
-                          ${active 
-                            ? 'bg-blue-100 text-blue-700 border-l-4 border-blue-600' 
-                            : 'text-gray-700 hover:bg-gray-100 hover:text-gray-900'
-                          }
-                        `}
-                      >
-                        <Icon className={`h-6 w-6 ${active ? 'text-blue-600' : 'text-gray-500'}`} />
-                        {link.label}
-                      </Link>
-                    </li>
-                  );
-                })}
-              </ul>
+            {/* Navigation Links - Scrollable */}
+            <nav className="flex-1 overflow-y-auto">
+              <div className="p-4">
+                <ul className="space-y-3">
+                  {links.map((link) => {
+                    const Icon = link.icon;
+                    const active = isActive(link.href);
+                    
+                    return (
+                      <li key={link.href}>
+                        <Link
+                          href={link.href}
+                          onClick={() => setIsOpen(false)}
+                          className={`
+                            flex items-center gap-3 px-4 py-4 rounded-lg transition-all duration-200 text-base font-medium
+                            ${active 
+                              ? 'bg-blue-100 text-blue-700 border-l-4 border-blue-600' 
+                              : 'text-gray-700 hover:bg-gray-100 hover:text-gray-900'
+                            }
+                          `}
+                        >
+                          <Icon className={`h-6 w-6 ${active ? 'text-blue-600' : 'text-gray-500'}`} />
+                          {link.label}
+                        </Link>
+                      </li>
+                    );
+                  })}
+                </ul>
+              </div>
             </nav>
 
             {/* Quick Actions for Seller */}
             {userRole === 'seller' && (
-              <div className="p-4 border-t bg-gray-50">
+              <div className="p-4 border-t bg-gray-50 shrink-0">
                 <h3 className="text-sm font-semibold text-gray-600 mb-3">Actions Rapides</h3>
                 <div className="space-y-2">
                   <Link
@@ -176,7 +178,7 @@ export function MobileNavigation({ userRole = 'seller' }: MobileNavigationProps)
             )}
 
             {/* Section Déconnexion */}
-            <div className="p-4 border-t bg-gray-50 mt-auto">
+            <div className="p-4 border-t bg-gray-50 shrink-0">
               <div className="space-y-2">
                 <Link
                   href="/login-common"
