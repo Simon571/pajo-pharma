@@ -492,6 +492,10 @@
     overflow-x: hidden;
     /* Amélioration des performances */
     will-change: scroll-position;
+    /* Force l'affichage complet sur mobile */
+    height: auto !important;
+    min-height: 0;
+    flex-shrink: 1;
   }
   
   /* Zone tactile élargie pour la scrollbar sur mobile */
@@ -504,5 +508,29 @@
     border: 3px solid #e5e7eb;
     border-radius: 8px;
     min-height: 40px; /* Hauteur minimale pour faciliter l'interaction */
+  }
+
+  /* Force la hauteur complète pour le dialog mobile */
+  [data-slot="dialog-content"] {
+    height: 100vh !important;
+    max-height: 100vh !important;
+    top: 0 !important;
+    left: 0 !important;
+    transform: none !important;
+    position: fixed !important;
+  }
+
+  /* S'assurer que la nav prend l'espace disponible */
+  .mobile-nav-container {
+    display: flex;
+    flex-direction: column;
+    height: 100vh;
+    overflow: hidden;
+  }
+
+  .mobile-nav-content {
+    flex: 1;
+    overflow-y: auto;
+    min-height: 0;
   }
 }

@@ -148,8 +148,8 @@ export function MobileNavigation({ userRole = 'seller' }: MobileNavigationProps)
             <Menu className="h-5 w-5" />
           </Button>
         </DialogTrigger>
-        <DialogContent className="w-72 p-0 max-w-sm h-full fixed left-0 top-0 translate-x-0 translate-y-0 rounded-r-lg rounded-l-none overflow-hidden">
-          <div className="flex flex-col h-full">
+        <DialogContent className="w-72 p-0 max-w-sm h-screen fixed left-0 top-0 translate-x-0 translate-y-0 rounded-r-lg rounded-l-none overflow-hidden border-none mobile-nav-container">
+          <div className="mobile-nav-container">
             {/* Header */}
             <div className="p-6 border-b bg-blue-600 text-white shrink-0">
               <div className="flex items-center justify-between">
@@ -169,7 +169,7 @@ export function MobileNavigation({ userRole = 'seller' }: MobileNavigationProps)
             </div>
 
             {/* Navigation Links - Scrollable avec curseur visible */}
-            <nav ref={navRef} className="flex-1 overflow-y-auto mobile-nav-scroll relative">
+            <nav ref={navRef} className="mobile-nav-content mobile-nav-scroll relative">
               {/* Indicateur de défilement en haut */}
               {userRole === 'admin' && (
                 <div className="text-xs text-center py-3 text-blue-600 scroll-indicator scroll-indicator-top">
@@ -179,11 +179,11 @@ export function MobileNavigation({ userRole = 'seller' }: MobileNavigationProps)
                     <span>📋</span>
                   </div>
                   <div className="text-[10px] mt-1 opacity-75">
-                    {links.length} modules disponibles
+                    {links.length} modules disponibles - Scroll pour voir tous
                   </div>
                 </div>
               )}
-              <div className="p-4 pb-6">
+              <div className="p-4 pb-20">
                 <ul className="space-y-3">
                   {links.map((link, index) => {
                     const Icon = link.icon;
@@ -217,6 +217,13 @@ export function MobileNavigation({ userRole = 'seller' }: MobileNavigationProps)
                     );
                   })}
                 </ul>
+                
+                {/* Message de fin pour s'assurer qu'on voit tous les modules */}
+                {userRole === 'admin' && (
+                  <div className="text-center py-4 text-xs text-gray-500 border-t mt-4">
+                    ✅ Fin de la liste - {links.length} modules affichés
+                  </div>
+                )}
               </div>
               
               {/* Indicateur de plus de contenu en bas */}
